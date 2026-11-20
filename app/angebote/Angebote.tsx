@@ -2,17 +2,19 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition, type FormEvent } from "react";
 import { fromParams } from "@/lib/anlageParams";
-import { BEISPIELMODELLE } from "@/lib/beispielmodelle";
 import {
   chf,
   STUFEN,
   vergleiche,
   VERMITTLUNGSGEBUEHR_CHF,
+  WARTUNGEN_PRO_STUFE,
   type Angebot,
+  type Preismodell,
   type Stufe,
 } from "@/lib/pricing";
+import { anfrageSenden } from "./actions";
 
 const STUFE_INFO: Record<Stufe, { name: string; tag: string; leistungen: number }> = {
   basis: { name: "Basis", tag: "Gesetzliche Pflichten erfüllt", leistungen: 2 },
@@ -20,8 +22,9 @@ const STUFE_INFO: Record<Stufe, { name: string; tag: string; leistungen: number 
   komplett: { name: "Komplett", tag: "Reparaturen inklusive", leistungen: 4 },
 };
 
+// Die erste Leistung (Anzahl Wartungen) hängt vom Paket ab und kommt aus WARTUNGEN_PRO_STUFE.
 const LEISTUNGEN = [
-  "Wartung und Inspektion",
+  "Wartungen pro Jahr, inkl. Inspektion",
   "Notruf und Personenbefreiung",
   "Störungseinsätze 24/7",
   "Reparaturen und Verschleissteile",
@@ -39,14 +42,17 @@ function Check({ on }: { on: boolean }) {
   );
 }
 
-export function Angebote() {
+export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispiel: boolean }) {
   const params = useSearchParams();
   const anlage = useMemo(() => fromParams(new URLSearchParams(params.toString())), [params]);
   const [stufe, setStufe] = useState<Stufe>("standard");
   const [gewaehlt, setGewaehlt] = useState<Record<Stufe, string | null>>({ basis: null, standard: null, komplett: null });
-  const [angenommen, setAngenommen] = useState(false);
+  const [formOffen, setFormOffen] = useState(false);
+  const [gesendet, setGesendet] = useState<string | null>(null);
+  const [fehler, setFehler] = useState<string | null>(null);
+  const [laeuft, starte] = useTransition();
 
-  const ergebnis = useMemo(() => (anlage ? vergleiche(anlage, BEISPIELMODELLE) : null), [anlage]);
+  const ergebnis = useMemo(() => (anlage ? vergleiche(anlage, modelle) : null), [anlage, modelle]);
 
   if (!anlage || !ergebnis) {
     return (
@@ -81,7 +87,9 @@ export function Angebote() {
         <Link href="/anlage" className="link-muted">
           Angaben ändern
         </Link>
-        <p className="notice">Vorschau mit Beispielpreisen erfundener Liftfirmen. Echte Angebote folgen, sobald Liftfirmen ihre Preise hinterlegt haben.</p>
+        {beispiel && (
+          <p className="notice">Vorschau mit Beispielpreisen erfundener Liftfirmen. Echte Angebote folgen, sobald Liftfirmen ihre Preise hinterlegt haben.</p>
+        )}
       </div>
 
       <div className="plans">
@@ -110,16 +118,13 @@ export function Angebote() {
                   return (
                     <li key={l} className={on ? "" : "off"}>
                       <Check on={on} />
-                      <span>{l}</span>
+                      <span>{i === 0 ? `${WARTUNGEN_PRO_STUFE[s]} ${l}` : l}</span>
                     </li>
                   );
                 })}
               </ul>
               {a && (
                 <div className="metrics">
-                  <div>
-                    <strong>{a.wartungenProJahr}</strong>Wartungen pro Jahr
-                  </div>
                   <div>
                     <strong>{a.reaktionszeitStd} Std.</strong>Reaktionszeit Störung
                   </div>
@@ -130,7 +135,10 @@ export function Angebote() {
                 className={`btn ${aktiv ? "btn--dark" : "btn--outline"}`}
                 aria-pressed={aktiv}
                 disabled={!a}
-                onClick={() => setStufe(s)}
+                onClick={() => {
+                  setStufe(s);
+                  setGesendet(null);
+                }}
               >
                 {aktiv ? "Ausgewählt" : "Dieses Paket wählen"}
               </button>
@@ -150,7 +158,6 @@ export function Angebote() {
                 <tr>
                   <th>Liftfirma</th>
                   <th>Preis pro Jahr</th>
-                  <th>Wartungen</th>
                   <th>Reaktionszeit</th>
                   <th className="right">
                     <span className="sr-only">Aktion</span>
@@ -162,10 +169,12 @@ export function Angebote() {
                   <tr key={a.firma}>
                     <td>{a.firma}</td>
                     <td>{chf(a.preisProJahrChf)}</td>
-                    <td>{a.wartungenProJahr}</td>
                     <td>{a.reaktionszeitStd} Std.</td>
                     <td className="right">
-                      <button type="button" className="linkbtn" onClick={() => setGewaehlt((g) => ({ ...g, [stufe]: a.firma }))}>
+                      <button type="button" className="linkbtn" onClick={() => {
+                          setGewaehlt((g) => ({ ...g, [stufe]: a.firma }));
+                          setGesendet(null);
+                        }}>
                         Wählen
                       </button>
                     </td>
@@ -185,14 +194,73 @@ export function Angebote() {
               {STUFE_INFO[stufe].name} · {aktuell.firma} · {chf(aktuell.preisProJahrChf)} / Jahr
             </div>
             <p className="summary__note">
-              {angenommen
-                ? "Danke! In der fertigen Version leiten wir Ihre Anfrage jetzt an die Liftfirma weiter."
+              {gesendet === `${stufe}:${aktuell.firma}`
+                ? `Danke! Ihre Anfrage ist bei ${aktuell.firma}. Die Firma meldet sich bei Ihnen für den Vertrag.`
                 : `Vermittlungsgebühr ${chf(VERMITTLUNGSGEBUEHR_CHF)}, Zahlung per Rechnung. Den Vertrag schliessen Sie direkt mit ${aktuell.firma}.`}
             </p>
           </div>
-          <button type="button" className="btn btn--dark" onClick={() => setAngenommen(true)} disabled={angenommen}>
-            {angenommen ? "Angefragt" : "Angebot annehmen"}
-          </button>
+          {gesendet !== `${stufe}:${aktuell.firma}` && !formOffen && (
+            <button type="button" className="btn btn--dark" onClick={() => setFormOffen(true)}>
+              Angebot annehmen
+            </button>
+          )}
+          {formOffen && gesendet !== `${stufe}:${aktuell.firma}` && (
+            <form
+              className="contact"
+              onSubmit={(e: FormEvent<HTMLFormElement>) => {
+                e.preventDefault();
+                const f = new FormData(e.currentTarget);
+                setFehler(null);
+                if (beispiel || aktuell.firmaId === undefined) {
+                  setFehler("Dies ist eine Vorschau mit Beispielpreisen. Anfragen sind erst mit echten Angeboten möglich.");
+                  return;
+                }
+                const ziel = `${stufe}:${aktuell.firma}`;
+                starte(async () => {
+                  const r = await anfrageSenden({
+                    anlageParams: params.toString(),
+                    firmaId: aktuell.firmaId!,
+                    stufe,
+                    name: String(f.get("name") ?? ""),
+                    email: String(f.get("email") ?? ""),
+                    telefon: String(f.get("telefon") ?? ""),
+                    adresse: String(f.get("adresse") ?? ""),
+                  });
+                  if (r.ok) {
+                    setGesendet(ziel);
+                    setFormOffen(false);
+                  } else {
+                    setFehler(r.fehler);
+                  }
+                });
+              }}
+            >
+              <label className="field">
+                Name *
+                <input name="name" autoComplete="name" required />
+              </label>
+              <label className="field">
+                E-Mail *
+                <input name="email" type="email" autoComplete="email" required />
+              </label>
+              <label className="field">
+                Telefon
+                <input name="telefon" type="tel" autoComplete="tel" />
+              </label>
+              <label className="field">
+                Adresse der Liegenschaft
+                <input name="adresse" autoComplete="street-address" />
+              </label>
+              {fehler && (
+                <p className="error" role="alert" style={{ gridColumn: "1 / -1" }}>
+                  {fehler}
+                </p>
+              )}
+              <button type="submit" className="btn btn--dark" disabled={laeuft} style={{ gridColumn: "1 / -1" }}>
+                {laeuft ? "Wird gesendet …" : "Verbindlich anfragen"}
+              </button>
+            </form>
+          )}
         </section>
       )}
     </main>

@@ -1,15 +1,18 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
+import { MARKE } from "@/lib/config";
 
-// Platzhalter, bis der Name der Plattform feststeht.
-export const MARKE = "[NAME]";
+export { MARKE };
 
-export function Header({ variant, step }: { variant: "overlay" | "bar"; step?: string }) {
+export function Header({ variant, step, rechts }: { variant: "overlay" | "bar"; step?: string; rechts?: ReactNode }) {
   return (
     <header className={`header header--${variant}`}>
       <Link href="/" className="logo">
         {MARKE}
       </Link>
-      {step ? (
+      {rechts ? (
+        rechts
+      ) : step ? (
         <div className="step">{step}</div>
       ) : (
         <>
@@ -19,7 +22,7 @@ export function Header({ variant, step }: { variant: "overlay" | "bar"; step?: s
             <a href="#partner">Für Liftfirmen</a>
           </nav>
           <nav className="nav" aria-label="Konto">
-            <a href="#partner">Partner-Login</a>
+            <Link href="/partner/login">Partner-Login</Link>
           </nav>
         </>
       )}

@@ -25,15 +25,22 @@ export interface Anlage {
   geschwindigkeitMs?: number;
 }
 
+// Anzahl Wartungen pro Jahr ist pro Paket fix vorgegeben (Entscheid Dario, 20.11.2026),
+// damit die Pakete aller Liftfirmen vergleichbar sind.
+export const WARTUNGEN_PRO_STUFE: Record<Stufe, number> = { basis: 2, standard: 4, komplett: 6 };
+
 export interface Paket {
   stufe: Stufe;
   grundpreisChf: number; // pro Aufzug und Jahr
-  wartungenProJahr: number;
   reaktionszeitStd: number;
 }
 
+// Was eine Liftfirma im Portal erfasst (ohne Name und Bewertung).
+export type PreismodellDaten = Omit<Preismodell, "firma" | "firmaId" | "bewertung">;
+
 export interface Preismodell {
   firma: string;
+  firmaId?: number; // gesetzt bei Preismodellen aus der Datenbank
   plzPraefixe: string[]; // Einzugsgebiet, z. B. ["8", "9"]
   hersteller: string[] | "alle";
   antriebe: Antrieb[];
@@ -51,6 +58,7 @@ export interface Preismodell {
 
 export interface Angebot {
   firma: string;
+  firmaId?: number;
   stufe: Stufe;
   preisProJahrChf: number;
   wartungenProJahr: number;
@@ -92,7 +100,7 @@ export function preisProAufzug(
   return preis;
 }
 
-// Gewichtung laut Konzept: 60 % Preis, 25 % Servicewerte, 15 % Bewertung.
+// Gewichtung laut Konzept: 60 % Preis, 25 % Service (Reaktionszeit), 15 % Bewertung.
 export function vergleiche(
   anlage: Anlage,
   modelle: Preismodell[],
@@ -111,22 +119,22 @@ export function vergleiche(
       if (proAufzug === null) continue;
       roh.push({
         firma: m.firma,
+        firmaId: m.firmaId,
         stufe,
         preisProJahrChf: Math.round(proAufzug * anzahl),
-        wartungenProJahr: paket.wartungenProJahr,
+        wartungenProJahr: WARTUNGEN_PRO_STUFE[stufe],
         reaktionszeitStd: paket.reaktionszeitStd,
         bewertung: m.bewertung,
       });
     }
     if (roh.length === 0) continue;
     const minPreis = Math.min(...roh.map((a) => a.preisProJahrChf));
-    const maxWartungen = Math.max(...roh.map((a) => a.wartungenProJahr));
     const minReaktion = Math.min(...roh.map((a) => a.reaktionszeitStd));
     result[stufe] = roh
       .map((a) => {
         const preisScore = minPreis / a.preisProJahrChf;
-        const serviceScore =
-          (a.wartungenProJahr / maxWartungen + minReaktion / a.reaktionszeitStd) / 2;
+        // Wartungen sind pro Stufe gleich, also zählt beim Service nur die Reaktionszeit.
+        const serviceScore = minReaktion / a.reaktionszeitStd;
         const score = 0.6 * preisScore + 0.25 * serviceScore + 0.15 * (a.bewertung / 5);
         return { ...a, score: Math.round(score * 1000) / 1000 };
       })
