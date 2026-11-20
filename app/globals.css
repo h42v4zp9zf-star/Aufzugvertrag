@@ -124,6 +124,11 @@ td.right, th.right { text-align: right; }
 .summary__main { font-size: 22px; font-weight: 500; margin: 6px 0; }
 .summary__note { font-size: 13px; color: var(--muted); line-height: 1.5; }
 
+@media (min-width: 960px) {
+  .config { align-items: flex-start; }
+  .config__visual { position: sticky; top: 0; height: 100svh; min-height: 560px; }
+}
+
 @media (max-width: 600px) {
   .header { padding: 16px 20px; }
   .config__form { padding: 32px 20px 48px; }

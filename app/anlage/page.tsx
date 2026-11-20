@@ -139,7 +139,7 @@ export default function AnlageErfassen() {
             <div className="grid2">
               <label className="field">
                 PLZ *
-                <input inputMode="numeric" maxLength={4} placeholder="8000" value={plz} onChange={(e) => setPlz(e.target.value)} required />
+                <input inputMode="numeric" maxLength={4} placeholder="8000" value={plz} onChange={(e) => { setPlz(e.target.value); setFehler(null); }} required />
               </label>
               <label className="field">
                 Anzahl Aufzüge *
@@ -175,7 +175,7 @@ export default function AnlageErfassen() {
               </label>
               <label className="field">
                 Haltestellen *
-                <input type="number" min={2} placeholder="5" value={halte} onChange={(e) => setHalte(e.target.value)} required />
+                <input type="number" min={2} placeholder="5" value={halte} onChange={(e) => { setHalte(e.target.value); setFehler(null); }} required />
               </label>
               <label className="field">
                 Baujahr
