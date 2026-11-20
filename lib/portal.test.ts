@@ -15,7 +15,6 @@ const GUELTIG = {
   antrieb_seil: "on",
   standard_angeboten: "on",
   standard_grundpreis: "2'150",
-  standard_wartungen: "3",
   standard_reaktion: "4",
   z_halte: "90",
   z_hydraulik: "150",
@@ -50,7 +49,7 @@ test("Gültiges Preisformular ergibt ein Preismodell", () => {
   assert.deepEqual(r.daten?.plzPraefixe, ["8", "9"]);
   assert.equal(r.daten?.hersteller, "alle");
   assert.deepEqual(r.daten?.antriebe, ["seil"]);
-  assert.deepEqual(r.daten?.pakete, [{ stufe: "standard", grundpreisChf: 2150, wartungenProJahr: 3, reaktionszeitStd: 4 }]);
+  assert.deepEqual(r.daten?.pakete, [{ stufe: "standard", grundpreisChf: 2150, reaktionszeitStd: 4 }]);
   assert.equal(r.daten?.zuschlaege.proHaltestelleUeber4Chf, 90);
   assert.equal(r.daten?.optionen.fernueberwachung, null);
 });
@@ -62,7 +61,7 @@ test("Fehlende Pflichtangaben werden gemeldet", () => {
 });
 
 test("Ungültige Zahlen werden gemeldet", () => {
-  const r = leseFormular(formular({ ...GUELTIG, standard_grundpreis: "abc", standard_wartungen: "99" }));
+  const r = leseFormular(formular({ ...GUELTIG, standard_grundpreis: "abc", standard_reaktion: "999" }));
   assert.equal(r.daten, null);
   assert.equal(r.fehler.length, 2);
 });

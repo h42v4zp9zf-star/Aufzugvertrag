@@ -43,7 +43,7 @@ const DATEN: PreismodellDaten = {
   plzPraefixe: ["8"],
   hersteller: "alle",
   antriebe: ["seil"],
-  pakete: [{ stufe: "basis", grundpreisChf: 1000, wartungenProJahr: 2, reaktionszeitStd: 24 }],
+  pakete: [{ stufe: "basis", grundpreisChf: 1000, reaktionszeitStd: 24 }],
   zuschlaege: { proHaltestelleUeber4Chf: 0, hydraulikChf: 0, alterUeber25JahreChf: 0, brandfallsteuerungChf: 0, proKabinenabschlusstuerChf: 0 },
   optionen: { fernueberwachung: null, verfuegbarkeit: null, ausserhalb: null },
 };

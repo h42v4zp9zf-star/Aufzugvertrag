@@ -1,12 +1,12 @@
 "use client";
 
 import { startTransition, useActionState, useState } from "react";
-import { chf, preisProAufzug, STUFEN, type Anlage, type Preismodell, type PreismodellDaten, type Stufe } from "@/lib/pricing";
+import { chf, preisProAufzug, STUFEN, WARTUNGEN_PRO_STUFE, type Anlage, type Preismodell, type PreismodellDaten, type Stufe } from "@/lib/pricing";
 import { HERSTELLER, PLZ_KREISE, STUFEN_NAMEN } from "@/lib/stammdaten";
 import { preiseSpeichern, type FormStatus } from "../actions";
 import { Fehlerliste } from "../Formulare";
 
-type PaketWerte = { an: boolean; grundpreis: string; wartungen: string; reaktion: string };
+type PaketWerte = { an: boolean; grundpreis: string; reaktion: string };
 type Zuschlag = "z_halte" | "z_hydraulik" | "z_alter" | "z_brandfall" | "z_tuer";
 
 const ZUSCHLAEGE: { key: Zuschlag; label: string; feld: keyof PreismodellDaten["zuschlaege"] }[] = [
@@ -47,8 +47,8 @@ export function PreisFormular({ gespeichert, veroeffentlicht }: { gespeichert: P
     for (const s of STUFEN) {
       const p = gespeichert?.pakete.find((x) => x.stufe === s);
       init[s] = p
-        ? { an: true, grundpreis: String(p.grundpreisChf), wartungen: String(p.wartungenProJahr), reaktion: String(p.reaktionszeitStd) }
-        : { an: !gespeichert, grundpreis: "", wartungen: "", reaktion: "" };
+        ? { an: true, grundpreis: String(p.grundpreisChf), reaktion: String(p.reaktionszeitStd) }
+        : { an: !gespeichert, grundpreis: "", reaktion: "" };
     }
     return init;
   });
@@ -84,7 +84,7 @@ export function PreisFormular({ gespeichert, veroeffentlicht }: { gespeichert: P
     const p = pakete[s];
     if (!p.an) return "nicht angeboten";
     if (p.grundpreis.trim() === "" || !Number.isFinite(n(p.grundpreis))) return "–";
-    const preis = preisProAufzug(vorschauModell, { stufe: s, grundpreisChf: n(p.grundpreis), wartungenProJahr: 1, reaktionszeitStd: 1 }, BEISPIEL, []);
+    const preis = preisProAufzug(vorschauModell, { stufe: s, grundpreisChf: n(p.grundpreis), reaktionszeitStd: 1 }, BEISPIEL, []);
     return preis === null ? "–" : chf(Math.round(preis));
   };
 
@@ -166,10 +166,10 @@ export function PreisFormular({ gespeichert, veroeffentlicht }: { gespeichert: P
                       Grundpreis (CHF / Jahr)
                       <input name={`${s}_grundpreis`} inputMode="decimal" value={p.grundpreis} onChange={(e) => setPaket(s, "grundpreis", e.target.value)} required />
                     </label>
-                    <label className="field">
+                    <p className="field">
                       Wartungen pro Jahr
-                      <input name={`${s}_wartungen`} inputMode="numeric" value={p.wartungen} onChange={(e) => setPaket(s, "wartungen", e.target.value)} required />
-                    </label>
+                      <span className="fix">{WARTUNGEN_PRO_STUFE[s]} (fix vorgegeben)</span>
+                    </p>
                     <label className="field">
                       Reaktionszeit bei Störung (Std.)
                       <input name={`${s}_reaktion`} inputMode="decimal" value={p.reaktion} onChange={(e) => setPaket(s, "reaktion", e.target.value)} required />
@@ -181,8 +181,8 @@ export function PreisFormular({ gespeichert, veroeffentlicht }: { gespeichert: P
           })}
         </div>
         <p className="muted">
-          Leistungen je Paket: Basis = Wartung, Inspektion, Notruf und Personenbefreiung. Standard = zusätzlich Störungseinsätze 24/7. Komplett =
-          zusätzlich Reparaturen und Verschleissteile.
+          Leistungen je Paket: Basis = 2 Wartungen pro Jahr, Inspektion, Notruf und Personenbefreiung. Standard = 4 Wartungen pro Jahr,
+          zusätzlich Störungseinsätze 24/7. Komplett = 6 Wartungen pro Jahr, zusätzlich Reparaturen und Verschleissteile.
         </p>
       </fieldset>
 

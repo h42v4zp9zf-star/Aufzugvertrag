@@ -14,7 +14,6 @@ export interface FormErgebnis {
 
 const GRENZEN = {
   grundpreis: [0, 100000],
-  wartungen: [1, 24],
   reaktion: [1, 168],
   zuschlag: [0, 10000],
 } as const;
@@ -56,7 +55,6 @@ export function leseFormular(form: FormLike): FormErgebnis {
     pakete.push({
       stufe,
       grundpreisChf: Math.round(zahl(form, `${stufe}_grundpreis`, GRENZEN.grundpreis, `${name}: Grundpreis`, fehler)),
-      wartungenProJahr: Math.round(zahl(form, `${stufe}_wartungen`, GRENZEN.wartungen, `${name}: Wartungen pro Jahr`, fehler)),
       reaktionszeitStd: zahl(form, `${stufe}_reaktion`, GRENZEN.reaktion, `${name}: Reaktionszeit`, fehler),
     });
   }

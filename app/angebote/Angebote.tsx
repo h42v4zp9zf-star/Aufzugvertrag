@@ -9,6 +9,7 @@ import {
   STUFEN,
   vergleiche,
   VERMITTLUNGSGEBUEHR_CHF,
+  WARTUNGEN_PRO_STUFE,
   type Angebot,
   type Preismodell,
   type Stufe,
@@ -21,8 +22,9 @@ const STUFE_INFO: Record<Stufe, { name: string; tag: string; leistungen: number 
   komplett: { name: "Komplett", tag: "Reparaturen inklusive", leistungen: 4 },
 };
 
+// Die erste Leistung (Anzahl Wartungen) hängt vom Paket ab und kommt aus WARTUNGEN_PRO_STUFE.
 const LEISTUNGEN = [
-  "Wartung und Inspektion",
+  "Wartungen pro Jahr, inkl. Inspektion",
   "Notruf und Personenbefreiung",
   "Störungseinsätze 24/7",
   "Reparaturen und Verschleissteile",
@@ -116,16 +118,13 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
                   return (
                     <li key={l} className={on ? "" : "off"}>
                       <Check on={on} />
-                      <span>{l}</span>
+                      <span>{i === 0 ? `${WARTUNGEN_PRO_STUFE[s]} ${l}` : l}</span>
                     </li>
                   );
                 })}
               </ul>
               {a && (
                 <div className="metrics">
-                  <div>
-                    <strong>{a.wartungenProJahr}</strong>Wartungen pro Jahr
-                  </div>
                   <div>
                     <strong>{a.reaktionszeitStd} Std.</strong>Reaktionszeit Störung
                   </div>
@@ -159,7 +158,6 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
                 <tr>
                   <th>Liftfirma</th>
                   <th>Preis pro Jahr</th>
-                  <th>Wartungen</th>
                   <th>Reaktionszeit</th>
                   <th className="right">
                     <span className="sr-only">Aktion</span>
@@ -171,7 +169,6 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
                   <tr key={a.firma}>
                     <td>{a.firma}</td>
                     <td>{chf(a.preisProJahrChf)}</td>
-                    <td>{a.wartungenProJahr}</td>
                     <td>{a.reaktionszeitStd} Std.</td>
                     <td className="right">
                       <button type="button" className="linkbtn" onClick={() => {
