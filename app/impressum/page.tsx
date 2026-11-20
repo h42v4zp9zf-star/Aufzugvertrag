@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
-import { ADRESSE, KONTAKT_EMAIL, MARKE } from "@/lib/config";
+import { ADRESSE, KONTAKT_EMAIL, MARKE, VERANTWORTLICH } from "@/lib/config";
 
 export const metadata: Metadata = { title: `Impressum – ${MARKE}` };
 
@@ -24,6 +24,8 @@ export default function Impressum() {
           <address className="adresse">
             {MARKE}
             <br />
+            {VERANTWORTLICH}
+            <br />
             {ADRESSE.strasse}
             <br />
             {ADRESSE.ort}
@@ -33,6 +35,10 @@ export default function Impressum() {
             <br />
             E-Mail: <a href={`mailto:${KONTAKT_EMAIL}`}>{KONTAKT_EMAIL}</a>
           </address>
+        </section>
+        <section className="stack" aria-labelledby="verantwortlich">
+          <h2 id="verantwortlich">Verantwortlich für den Inhalt</h2>
+          <p className="muted">{VERANTWORTLICH}</p>
         </section>
         <section className="stack" aria-labelledby="vermittlung">
           <h2 id="vermittlung">Vermittlung</h2>
