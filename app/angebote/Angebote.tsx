@@ -11,7 +11,6 @@ import {
   vergleiche,
   VERMITTLUNGSGEBUEHR_CHF,
   type Angebot,
-  type OptionKey,
   type Stufe,
 } from "@/lib/pricing";
 
@@ -26,12 +25,6 @@ const LEISTUNGEN = [
   "Notruf und Personenbefreiung",
   "Störungseinsätze 24/7",
   "Reparaturen und Verschleissteile",
-];
-
-const OPTIONEN: { key: OptionKey; label: string }[] = [
-  { key: "fernueberwachung", label: "Fernüberwachung" },
-  { key: "verfuegbarkeit", label: "Verfügbarkeitsgarantie 99,5 %" },
-  { key: "ausserhalb", label: "Einsätze ausserhalb der Geschäftszeiten" },
 ];
 
 function Check({ on }: { on: boolean }) {
@@ -49,12 +42,11 @@ function Check({ on }: { on: boolean }) {
 export function Angebote() {
   const params = useSearchParams();
   const anlage = useMemo(() => fromParams(new URLSearchParams(params.toString())), [params]);
-  const [optionen, setOptionen] = useState<OptionKey[]>([]);
   const [stufe, setStufe] = useState<Stufe>("standard");
   const [gewaehlt, setGewaehlt] = useState<Record<Stufe, string | null>>({ basis: null, standard: null, komplett: null });
   const [angenommen, setAngenommen] = useState(false);
 
-  const ergebnis = useMemo(() => (anlage ? vergleiche(anlage, BEISPIELMODELLE, optionen) : null), [anlage, optionen]);
+  const ergebnis = useMemo(() => (anlage ? vergleiche(anlage, BEISPIELMODELLE) : null), [anlage]);
 
   if (!anlage || !ergebnis) {
     return (
@@ -76,16 +68,6 @@ export function Angebote() {
   };
   const aktuell = angebotFuer(stufe);
   const weitere = ergebnis[stufe].filter((a) => a.firma !== aktuell?.firma);
-
-  const toggle = (k: OptionKey) =>
-    setOptionen((o) => (o.includes(k) ? o.filter((x) => x !== k) : [...o, k]));
-
-  const optionPreis = (k: OptionKey): string => {
-    if (!aktuell) return "";
-    const m = BEISPIELMODELLE.find((x) => x.firma === aktuell.firma);
-    const p = m?.optionen[k];
-    return p == null ? "bei dieser Firma nicht verfügbar" : `+ ${chf(p * anlage.anzahlAufzuege)} / Jahr`;
-  };
 
   const herstellerText = anlage.hersteller === "unbekannt" ? "Hersteller unbekannt" : anlage.hersteller;
 
@@ -120,7 +102,7 @@ export function Angebote() {
                   <p className="price-sub">pro Jahr, festes Angebot von {a.firma}</p>
                 </div>
               ) : (
-                <p className="empty">Für Ihre Anlage und die gewählten Optionen gibt es in dieser Stufe noch kein Angebot.</p>
+                <p className="empty">Für Ihre Anlage gibt es in dieser Stufe noch kein Angebot.</p>
               )}
               <ul className="features">
                 {LEISTUNGEN.map((l, i) => {
@@ -156,21 +138,6 @@ export function Angebote() {
           );
         })}
       </div>
-
-      <section className="block" aria-labelledby="optionen">
-        <h2 id="optionen">Zusatzoptionen</h2>
-        <div className="addons">
-          {OPTIONEN.map((o) => (
-            <label key={o.key} className="addon">
-              <span>
-                <input type="checkbox" checked={optionen.includes(o.key)} onChange={() => toggle(o.key)} />
-                {o.label}
-              </span>
-              <span className="muted">{optionPreis(o.key)}</span>
-            </label>
-          ))}
-        </div>
-      </section>
 
       <section className="block" aria-labelledby="weitere">
         <h2 id="weitere">Weitere Angebote in {STUFE_INFO[stufe].name}</h2>

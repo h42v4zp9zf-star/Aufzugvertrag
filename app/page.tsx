@@ -6,7 +6,7 @@ export default function Startseite() {
     <>
       <Header variant="overlay" />
       <main>
-        <section className="hero hero--dark">
+        <section className="hero">
           <div className="hero__text">
             <h1>Aufzugswartung. Fair verglichen.</h1>
             <p className="lead">
@@ -18,16 +18,16 @@ export default function Startseite() {
             Bild: Aufzugskabine in Schwarzweiss
           </div>
           <div className="btn-row">
-            <Link href="/anlage" className="btn btn--light btn--wide">
+            <Link href="/anlage" className="btn btn--dark btn--wide">
               Angebote vergleichen
             </Link>
-            <a href="#beratung" className="btn btn--ghost btn--wide">
+            <a href="#beratung" className="btn btn--outline btn--wide">
               Beratung vor Ort buchen
             </a>
           </div>
         </section>
 
-        <section id="ablauf" className="section">
+        <section id="ablauf" className="section divider">
           <div className="hero__text">
             <h2 style={{ fontSize: 36, fontWeight: 500 }}>In drei Schritten zum Vertrag</h2>
             <p className="lead">Für Eigentümer, Stockwerkeigentümer und Verwaltungen.</p>
@@ -63,7 +63,7 @@ export default function Startseite() {
           </Link>
         </section>
 
-        <section id="beratung" className="hero hero--soft">
+        <section id="beratung" className="hero hero--compact divider">
           <div className="hero__text">
             <h2>Keine Anlagedaten zur Hand?</h2>
             <p className="lead">
@@ -78,23 +78,23 @@ export default function Startseite() {
             <a href="mailto:[KONTAKT-E-MAIL]?subject=Beratung%20vor%20Ort" className="btn btn--dark btn--wide">
               Beratung buchen
             </a>
-            <a href="#ablauf" className="btn btn--light btn--wide">
+            <a href="#ablauf" className="btn btn--outline btn--wide">
               Mehr erfahren
             </a>
           </div>
         </section>
 
-        <section id="partner" className="section section--dark">
+        <section id="partner" className="section section--compact divider">
           <h2 style={{ fontSize: 36, fontWeight: 500 }}>Für Liftfirmen</h2>
           <p className="lead">
             Preismodell einmal im Portal hinterlegen. Passende Anfragen erhalten Sie mit fertig
             berechnetem Angebot, ohne einzelne Offerten zu schreiben.
           </p>
           <div className="btn-row">
-            <a href="mailto:[KONTAKT-E-MAIL]?subject=Partner%20werden" className="btn btn--light btn--wide">
+            <a href="mailto:[KONTAKT-E-MAIL]?subject=Partner%20werden" className="btn btn--dark btn--wide">
               Partner werden
             </a>
-            <span className="btn btn--ghost btn--wide" aria-disabled="true">
+            <span className="btn btn--outline btn--wide" aria-disabled="true">
               Partner-Login (folgt)
             </span>
           </div>
