@@ -3,12 +3,14 @@
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import pg from "pg";
-import { SCHEMA, type Db } from "./db.ts";
-import { tokenHash } from "./passwort.ts";
+import { adminAusUmgebung, SCHEMA, type Db } from "./db.ts";
+import { pruefePasswort, tokenHash } from "./passwort.ts";
 import {
   aktivePreismodelle,
   anfrageAnlegen,
   anfragenListe,
+  beratungAnlegen,
+  beratungenListe,
   kontoAnlegen,
   kontoMitHashPerEmail,
   kontoPerSitzung,
@@ -87,4 +89,39 @@ test("Konto, Sitzung, Freischaltung, Preismodell und Anfrage", { skip }, async (
   assert.equal(eigene[0].anlage.hersteller, "KONE");
   assert.equal((await anfragenListe(d)).length, 1);
   assert.equal((await anfragenListe(d, k.id + 999)).length, 0);
+});
+
+test("Verwaltungskonto aus ADMIN_EMAIL und ADMIN_PASSWORT", { skip }, async () => {
+  await adminAusUmgebung(d, { ADMIN_EMAIL: "Chef@Example.ch", ADMIN_PASSWORT: "erstes-passwort-1" });
+  let k = await kontoMitHashPerEmail(d, "chef@example.ch");
+  assert.equal(k?.rolle, "admin");
+  assert.equal(k?.status, "aktiv");
+  assert.ok(await pruefePasswort("erstes-passwort-1", k!.passwort_hash));
+
+  // Zweiter Start mit gleichem Passwort: nichts ändert sich, kein Fehler.
+  await adminAusUmgebung(d, { ADMIN_EMAIL: "chef@example.ch", ADMIN_PASSWORT: "erstes-passwort-1" });
+
+  // Neues Passwort in den Einstellungen: gilt nach dem nächsten Start.
+  await adminAusUmgebung(d, { ADMIN_EMAIL: "chef@example.ch", ADMIN_PASSWORT: "neues-passwort-22" });
+  k = await kontoMitHashPerEmail(d, "chef@example.ch");
+  assert.ok(await pruefePasswort("neues-passwort-22", k!.passwort_hash));
+
+  // Zu kurzes Passwort oder fehlende Angaben: es wird nichts angelegt.
+  await adminAusUmgebung(d, { ADMIN_EMAIL: "kurz@example.ch", ADMIN_PASSWORT: "kurz" });
+  await adminAusUmgebung(d, {});
+  assert.equal(await kontoMitHashPerEmail(d, "kurz@example.ch"), null);
+
+  // Eine Liftfirma mit derselben E-Mail wird nie zum Admin gemacht.
+  await kontoAnlegen(d, { firma: "Lift AG", uid: "CHE-999.888.777", email: "firma@example.ch", passwortHash: "x" });
+  await adminAusUmgebung(d, { ADMIN_EMAIL: "firma@example.ch", ADMIN_PASSWORT: "irgendein-passwort" });
+  assert.equal((await kontoMitHashPerEmail(d, "firma@example.ch"))?.rolle, "firma");
+  assert.equal((await kontoMitHashPerEmail(d, "firma@example.ch"))?.passwort_hash, "x");
+});
+
+test("Beratung vor Ort wird gespeichert", { skip }, async () => {
+  await beratungAnlegen(d, { name: "Max Muster", email: "max@example.com", telefon: "079 000 00 00", adresse: "Seestrasse 1, 8800 Thalwil", anzahlAufzuege: 2, bemerkung: "Bitte vormittags" });
+  const liste = await beratungenListe(d);
+  assert.equal(liste.length, 1);
+  assert.equal(liste[0].anzahl_aufzuege, 2);
+  assert.equal(liste[0].bemerkung, "Bitte vormittags");
 });

@@ -121,6 +121,34 @@ export async function anfrageAnlegen(
   return rows[0].id;
 }
 
+export interface Beratung {
+  id: number;
+  name: string;
+  email: string;
+  telefon: string;
+  adresse: string;
+  anzahl_aufzuege: number;
+  bemerkung: string;
+  erstellt_am: Date;
+}
+
+export async function beratungAnlegen(
+  d: Db,
+  b: { name: string; email: string; telefon: string; adresse: string; anzahlAufzuege: number; bemerkung: string },
+): Promise<number> {
+  const { rows } = await d.query<{ id: number }>(
+    `INSERT INTO beratungen (name, email, telefon, adresse, anzahl_aufzuege, bemerkung)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+    [b.name, b.email, b.telefon, b.adresse, b.anzahlAufzuege, b.bemerkung],
+  );
+  return rows[0].id;
+}
+
+export async function beratungenListe(d: Db): Promise<Beratung[]> {
+  const { rows } = await d.query<Beratung>("SELECT * FROM beratungen ORDER BY erstellt_am DESC");
+  return rows;
+}
+
 export async function anfragenListe(d: Db, kontoId?: number): Promise<Anfrage[]> {
   const { rows } = await d.query<Anfrage>(
     `SELECT a.*, k.firma FROM anfragen a JOIN konten k ON k.id = a.konto_id
