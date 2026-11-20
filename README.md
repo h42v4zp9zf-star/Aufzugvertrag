@@ -4,7 +4,7 @@ Plattform, auf der Eigentümer und Verwaltungen ihre Aufzugsanlage erfassen, fes
 
 ## Name
 
-Die Marke heisst **Elevaris**, dazu kommt die Domain **liftvergleich.ch** (leitet später auf die Hauptseite weiter). Name, Domain, Kontakt-E-Mail (info@liftvergleich.ch) und Adresse stehen an einer einzigen Stelle: `lib/config.ts`. Dort ändern, und die ganze Seite übernimmt es.
+Die Marke heisst **Elevaris**. Hauptdomain ist **elevaris.ch**, dazu kommt **liftvergleich.ch** (leitet später auf elevaris.ch weiter). Beide Domains sind noch zu reservieren. Name, Domain, Kontakt-E-Mail (info@liftvergleich.ch) und Adresse stehen an einer einzigen Stelle: `lib/config.ts`. Dort ändern, und die ganze Seite übernimmt es.
 
 ## Stand
 

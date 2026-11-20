@@ -3,7 +3,9 @@
 // Markenname (Entscheid Dario, 20.11.2026).
 export const MARKE = "Elevaris";
 
-// Zusätzliche Domain, leitet beim Hosting auf die Hauptseite weiter.
+// Hauptdomain und zusätzliche Domain (Entscheid Dario, 20.11.2026; noch nicht reserviert).
+// liftvergleich.ch leitet beim Hosting auf die Hauptdomain weiter.
+export const HAUPT_DOMAIN = "elevaris.ch";
 export const ZUSATZ_DOMAIN = "liftvergleich.ch";
 
 // Kontakt (Angaben Dario, 20.11.2026).
