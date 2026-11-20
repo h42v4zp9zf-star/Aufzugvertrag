@@ -32,8 +32,12 @@ export interface Paket {
   reaktionszeitStd: number;
 }
 
+// Was eine Liftfirma im Portal erfasst (ohne Name und Bewertung).
+export type PreismodellDaten = Omit<Preismodell, "firma" | "firmaId" | "bewertung">;
+
 export interface Preismodell {
   firma: string;
+  firmaId?: number; // gesetzt bei Preismodellen aus der Datenbank
   plzPraefixe: string[]; // Einzugsgebiet, z. B. ["8", "9"]
   hersteller: string[] | "alle";
   antriebe: Antrieb[];
@@ -51,6 +55,7 @@ export interface Preismodell {
 
 export interface Angebot {
   firma: string;
+  firmaId?: number;
   stufe: Stufe;
   preisProJahrChf: number;
   wartungenProJahr: number;
@@ -111,6 +116,7 @@ export function vergleiche(
       if (proAufzug === null) continue;
       roh.push({
         firma: m.firma,
+        firmaId: m.firmaId,
         stufe,
         preisProJahrChf: Math.round(proAufzug * anzahl),
         wartungenProJahr: paket.wartungenProJahr,

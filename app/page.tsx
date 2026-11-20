@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Header, MARKE } from "@/components/Header";
+import { KONTAKT_EMAIL } from "@/lib/config";
 
 export default function Startseite() {
   return (
@@ -75,7 +76,7 @@ export default function Startseite() {
             Bild: Techniker im Maschinenraum
           </div>
           <div className="btn-row">
-            <a href="mailto:[KONTAKT-E-MAIL]?subject=Beratung%20vor%20Ort" className="btn btn--dark btn--wide">
+            <a href={`mailto:${KONTAKT_EMAIL}?subject=Beratung%20vor%20Ort`} className="btn btn--dark btn--wide">
               Beratung buchen
             </a>
             <a href="#ablauf" className="btn btn--outline btn--wide">
@@ -91,12 +92,12 @@ export default function Startseite() {
             berechnetem Angebot, ohne einzelne Offerten zu schreiben.
           </p>
           <div className="btn-row">
-            <a href="mailto:[KONTAKT-E-MAIL]?subject=Partner%20werden" className="btn btn--dark btn--wide">
+            <Link href="/partner/registrieren" className="btn btn--dark btn--wide">
               Partner werden
-            </a>
-            <span className="btn btn--outline btn--wide" aria-disabled="true">
-              Partner-Login (folgt)
-            </span>
+            </Link>
+            <Link href="/partner/login" className="btn btn--outline btn--wide">
+              Partner-Login
+            </Link>
           </div>
         </section>
       </main>

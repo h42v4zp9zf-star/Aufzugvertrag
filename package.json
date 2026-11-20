@@ -6,15 +6,18 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --test --experimental-strip-types \"lib/**/*.test.ts\""
+    "test": "node --test --experimental-strip-types \"lib/**/*.test.ts\"",
+    "admin:anlegen": "node --experimental-strip-types scripts/admin-anlegen.ts"
   },
   "dependencies": {
     "next": "15.5.29",
+    "pg": "8.16.3",
     "react": "19.1.1",
     "react-dom": "19.1.1"
   },
   "devDependencies": {
     "@types/node": "22.18.0",
+    "@types/pg": "8.15.5",
     "@types/react": "19.1.12",
     "@types/react-dom": "19.1.9",
     "typescript": "5.9.2"

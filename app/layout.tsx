@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { MARKE } from "@/lib/config";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "[NAME] – Aufzugswartung fair verglichen",
+  title: `${MARKE} – Aufzugswartung fair verglichen`,
   description:
     "Anlage erfassen, feste Angebote von Schweizer Liftfirmen vergleichen und den passenden Wartungsvertrag wählen.",
 };
