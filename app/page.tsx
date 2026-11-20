@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Header, MARKE } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import { Header } from "@/components/Header";
 import { KONTAKT_EMAIL } from "@/lib/config";
 
 export default function Startseite() {
@@ -101,11 +102,7 @@ export default function Startseite() {
           </div>
         </section>
       </main>
-      <footer className="footer">
-        <span>{MARKE} © 2026</span>
-        <a href="#ablauf">Datenschutz</a>
-        <a href="#ablauf">Impressum</a>
-      </footer>
+      <Footer />
     </>
   );
 }

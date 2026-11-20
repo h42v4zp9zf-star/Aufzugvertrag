@@ -4,7 +4,7 @@ Plattform, auf der Eigentümer und Verwaltungen ihre Aufzugsanlage erfassen, fes
 
 ## Name
 
-Die Marke heisst **Elevaris**, dazu kommt die Domain **liftvergleich.ch** (leitet später auf die Hauptseite weiter). Name, Domain und Kontakt-E-Mail stehen an einer einzigen Stelle: `lib/config.ts`. Dort ändern, und die ganze Seite übernimmt es. Die Kontakt-E-Mail ist noch ein Platzhalter.
+Die Marke heisst **Elevaris**, dazu kommt die Domain **liftvergleich.ch** (leitet später auf die Hauptseite weiter). Name, Domain, Kontakt-E-Mail (info@liftvergleich.ch) und Adresse stehen an einer einzigen Stelle: `lib/config.ts`. Dort ändern, und die ganze Seite übernimmt es.
 
 ## Stand
 
@@ -12,7 +12,7 @@ Die Marke heisst **Elevaris**, dazu kommt die Domain **liftvergleich.ch** (leite
 - **Liftfirmen-Portal** (`/partner`): registrieren, anmelden, Preismodell erfassen (Einzugsgebiet, Antriebe, Hersteller, drei Pakete, Zuschläge) mit Live-Vorschau, veröffentlichen, eingegangene Anfragen sehen.
 - **Verwaltung** (`/admin`): Liftfirmen prüfen und freischalten oder sperren, alle Anfragen mit Vermittlungsgebühr (CHF 160 pro Anfrage).
 - Preise erscheinen im Vergleich erst, wenn die Firma freigeschaltet ist **und** „veröffentlichen“ angehakt hat. Solange das bei keiner Firma der Fall ist, zeigt der Vergleich erfundene Beispielpreise (`lib/beispielmodelle.ts`) mit Hinweis.
-- Noch nicht gebaut: E-Mail-Versand (Bestätigung an Kunde und Firma, Passwort vergessen), Rechnungen, Beratung vor Ort buchen, Hosting in der Schweiz, Kontakt-E-Mail.
+- Noch nicht gebaut: E-Mail-Versand (Bestätigung an Kunde und Firma, Passwort vergessen), Rechnungen, Beratung vor Ort buchen, Hosting in der Schweiz, Datenschutzerklärung.
 
 ## Lokal starten
 
@@ -35,7 +35,8 @@ Die Tabellen werden beim ersten Zugriff automatisch angelegt. Ohne `DATABASE_URL
 
 | Pfad | Inhalt |
 | --- | --- |
-| `lib/config.ts` | Marke „Elevaris“, Zusatz-Domain und Kontakt-E-Mail |
+| `lib/config.ts` | Marke „Elevaris“, Zusatz-Domain, Kontakt-E-Mail und Adresse |
+| `app/impressum/page.tsx` | Impressum |
 | `app/page.tsx` | Startseite |
 | `app/anlage/page.tsx` | Formular „Anlage erfassen“ |
 | `app/angebote/` | Paketvergleich und „Angebot annehmen“ (Preis wird auf dem Server neu berechnet) |
