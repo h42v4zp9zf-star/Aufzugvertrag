@@ -12,7 +12,19 @@ Die Marke heisst **Elevaris**. Hauptdomain ist **elevaris.ch**, dazu kommt **lif
 - **Liftfirmen-Portal** (`/partner`): registrieren, anmelden, Preismodell erfassen (Einzugsgebiet, Antriebe, Hersteller, drei Pakete, Zuschläge) mit Live-Vorschau, veröffentlichen, eingegangene Anfragen sehen.
 - **Verwaltung** (`/admin`): Liftfirmen prüfen und freischalten oder sperren, alle Anfragen mit Vermittlungsgebühr (CHF 160 pro Anfrage).
 - Preise erscheinen im Vergleich erst, wenn die Firma freigeschaltet ist **und** „veröffentlichen“ angehakt hat. Solange das bei keiner Firma der Fall ist, zeigt der Vergleich erfundene Beispielpreise (`lib/beispielmodelle.ts`) mit Hinweis.
-- Noch nicht gebaut: E-Mail-Versand (Bestätigung an Kunde und Firma, Passwort vergessen), Rechnungen, Beratung vor Ort buchen, Hosting in der Schweiz, Datenschutzerklärung.
+- **Beratung vor Ort** (`/beratung`): Buchungsformular, die Buchungen erscheinen in der Verwaltung.
+- Noch nicht gebaut: E-Mail-Versand (Bestätigung an Kunde und Firma, Passwort vergessen), Rechnungen, Hosting in der Schweiz, Datenschutzerklärung.
+
+## Testversion (Vercel + Neon, kostenlos)
+
+Zum Ausprobieren, bevor ein Schweizer Hoster gewählt ist. Nur mit Testdaten verwenden (Server in Frankfurt).
+
+1. Auf vercel.com mit GitHub anmelden, das Repository importieren.
+2. Beim Import zwei Umgebungsvariablen setzen: `ADMIN_EMAIL` und `ADMIN_PASSWORT` (mind. 10 Zeichen). Das Verwaltungskonto wird damit automatisch angelegt.
+3. Im Projekt unter „Storage“ eine Neon-Datenbank anlegen und mit dem Projekt verbinden (setzt `DATABASE_URL`).
+4. Neu bereitstellen („Redeploy“). Die Tabellen werden beim ersten Aufruf angelegt.
+
+`vercel.json` legt die Server nach Frankfurt (`fra1`), nahe an die Datenbank. Bis zum Start ist die Seite für Suchmaschinen gesperrt (`robots` in `app/layout.tsx`).
 
 ## Lokal starten
 
@@ -21,7 +33,7 @@ Voraussetzung: Node.js 22 und eine PostgreSQL-Datenbank.
 ```bash
 npm install
 cp .env.example .env.local        # DATABASE_URL eintragen
-npm run admin:anlegen -- name@firma.ch "langes-passwort"   # Verwaltungskonto
+npm run admin:anlegen -- name@firma.ch "langes-passwort"   # Verwaltungskonto (oder ADMIN_EMAIL/ADMIN_PASSWORT setzen)
 npm run dev                       # http://localhost:3000
 npm test                          # Tests
 npm run build                     # Produktions-Build
@@ -37,6 +49,7 @@ Die Tabellen werden beim ersten Zugriff automatisch angelegt. Ohne `DATABASE_URL
 | --- | --- |
 | `lib/config.ts` | Marke „Elevaris“, Zusatz-Domain, Kontakt-E-Mail und Adresse |
 | `app/impressum/page.tsx` | Impressum |
+| `app/beratung/` | Beratung vor Ort buchen |
 | `app/page.tsx` | Startseite |
 | `app/anlage/page.tsx` | Formular „Anlage erfassen“ |
 | `app/angebote/` | Paketvergleich und „Angebot annehmen“ (Preis wird auf dem Server neu berechnet) |

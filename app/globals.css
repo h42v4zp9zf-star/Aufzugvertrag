@@ -73,6 +73,8 @@ h1, h2, h3, p { margin: 0; }
 .field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
 p.field { margin: 0; }
 .field .fix { min-height: 44px; display: flex; align-items: center; color: var(--ink); font-size: 15px; }
+.field textarea { padding: 10px 12px; border: 1px solid var(--field); border-radius: var(--radius); background: var(--white); color: var(--ink); width: 100%; font: inherit; resize: vertical; }
+.field textarea:focus { outline: 2px solid var(--ink); outline-offset: 2px; }
 .field input, .field select { min-height: 44px; padding: 0 12px; border: 1px solid var(--field); border-radius: var(--radius); background: var(--white); color: var(--ink); width: 100%; }
 .field input:focus, .field select:focus, .choice:focus-visible, .btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .choice { min-height: 44px; padding: 0 16px; border-radius: var(--radius); font-size: 14px; text-align: left; background: var(--white); border: 1px solid var(--field); cursor: pointer; }

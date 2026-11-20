@@ -4,10 +4,12 @@ import { PortalHeader } from "@/components/PortalHeader";
 import { kontoStatusAendern } from "@/app/partner/actions";
 import { db, dbKonfiguriert } from "@/lib/db";
 import { chf, VERMITTLUNGSGEBUEHR_CHF } from "@/lib/pricing";
-import { anfragenListe, kontenListe, type KontoStatus } from "@/lib/repo";
+import { anfragenListe, beratungenListe, kontenListe, type KontoStatus } from "@/lib/repo";
 import { kontoErforderlich } from "@/lib/sitzung";
 
 export const dynamic = "force-dynamic";
+
+const BERATUNG_PAUSCHALE_CHF = 130;
 
 const STATUS_TEXT: Record<KontoStatus, string> = { pruefung: "In Prüfung", aktiv: "Freigeschaltet", gesperrt: "Gesperrt" };
 
@@ -27,7 +29,7 @@ export default async function AdminPage() {
   if (!dbKonfiguriert()) redirect("/partner/login");
   const konto = await kontoErforderlich("admin");
   const d = await db();
-  const [konten, anfragen] = await Promise.all([kontenListe(d), anfragenListe(d)]);
+  const [konten, anfragen, beratungen] = await Promise.all([kontenListe(d), anfragenListe(d), beratungenListe(d)]);
 
   return (
     <>
@@ -82,6 +84,49 @@ export default async function AdminPage() {
             </span>
           </div>
           <AnfragenTabelle anfragen={anfragen} mitFirma />
+        </section>
+
+        <section className="card">
+          <div className="row-between">
+            <h2>Beratungen vor Ort</h2>
+            <span className="muted">
+              {beratungen.length} Buchung(en) · Anfangspauschalen {chf(beratungen.length * BERATUNG_PAUSCHALE_CHF)}
+            </span>
+          </div>
+          {beratungen.length === 0 ? (
+            <p className="muted">Noch keine Buchungen.</p>
+          ) : (
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Datum</th>
+                    <th>Kunde</th>
+                    <th>Liegenschaft</th>
+                    <th>Aufzüge</th>
+                    <th>Bemerkung</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {beratungen.map((b) => (
+                    <tr key={b.id}>
+                      <td>{new Date(b.erstellt_am).toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "numeric" })}</td>
+                      <td>
+                        {b.name}
+                        <br />
+                        <a href={`mailto:${b.email}`}>{b.email}</a>
+                        <br />
+                        {b.telefon}
+                      </td>
+                      <td>{b.adresse}</td>
+                      <td>{b.anzahl_aufzuege}</td>
+                      <td style={{ whiteSpace: "pre-line" }}>{b.bemerkung || "–"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
       </main>
     </>

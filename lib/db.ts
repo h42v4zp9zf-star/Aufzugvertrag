@@ -1,5 +1,7 @@
-// Datenbankzugriff (PostgreSQL). Verbindung über die Umgebungsvariable DATABASE_URL.
+// Datenbankzugriff (PostgreSQL). Verbindung über die Umgebungsvariable DATABASE_URL
+// (oder POSTGRES_URL, wie sie manche Hoster automatisch setzen).
 import pg from "pg";
+import { hashPasswort, passwortFehler, pruefePasswort } from "./passwort.ts";
 
 export interface Db {
   query<T = Record<string, unknown>>(text: string, params?: unknown[]): Promise<{ rows: T[] }>;
@@ -42,23 +44,76 @@ CREATE TABLE IF NOT EXISTS anfragen (
   kunde_adresse  TEXT NOT NULL DEFAULT '',
   erstellt_am    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS beratungen (
+  id               SERIAL PRIMARY KEY,
+  name             TEXT NOT NULL,
+  email            TEXT NOT NULL,
+  telefon          TEXT NOT NULL,
+  adresse          TEXT NOT NULL,
+  anzahl_aufzuege  INTEGER NOT NULL DEFAULT 1,
+  bemerkung        TEXT NOT NULL DEFAULT '',
+  erstellt_am      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 `;
 
 let pool: pg.Pool | null = null;
 let bereit: Promise<void> | null = null;
 
+function datenbankUrl(): string | undefined {
+  return process.env.DATABASE_URL || process.env.POSTGRES_URL || undefined;
+}
+
 export function dbKonfiguriert(): boolean {
-  return Boolean(process.env.DATABASE_URL);
+  return Boolean(datenbankUrl());
+}
+
+// Verwaltungskonto aus den Umgebungsvariablen ADMIN_EMAIL und ADMIN_PASSWORT.
+// So lässt sich das Konto beim Hoster einrichten, ganz ohne Kommandozeile.
+// Ändert man ADMIN_PASSWORT, gilt nach dem nächsten Start das neue Passwort.
+export async function adminAusUmgebung(d: Db, env: Record<string, string | undefined> = process.env): Promise<void> {
+  const email = env.ADMIN_EMAIL?.trim().toLowerCase();
+  const passwort = env.ADMIN_PASSWORT ?? "";
+  if (!email) return;
+  const fehler = passwortFehler(passwort);
+  if (fehler) {
+    console.warn(`ADMIN_PASSWORT ungültig, Verwaltungskonto nicht eingerichtet: ${fehler}`);
+    return;
+  }
+  const { rows } = await d.query<{ id: number; rolle: string; passwort_hash: string }>(
+    "SELECT id, rolle, passwort_hash FROM konten WHERE email = $1",
+    [email],
+  );
+  if (rows.length === 0) {
+    await d.query(
+      `INSERT INTO konten (firma, uid, email, passwort_hash, rolle, status)
+       VALUES ('Verwaltung', '', $1, $2, 'admin', 'aktiv') ON CONFLICT (email) DO NOTHING`,
+      [email, await hashPasswort(passwort)],
+    );
+  } else if (rows[0].rolle === "admin" && !(await pruefePasswort(passwort, rows[0].passwort_hash))) {
+    await d.query("UPDATE konten SET passwort_hash = $1, status = 'aktiv' WHERE id = $2", [await hashPasswort(passwort), rows[0].id]);
+  }
 }
 
 // Liefert die Datenbank und legt beim ersten Zugriff die Tabellen an.
 export async function db(): Promise<Db> {
-  if (!process.env.DATABASE_URL) {
+  const url = datenbankUrl();
+  if (!url) {
     throw new Error("DATABASE_URL ist nicht gesetzt.");
   }
   if (!pool) {
-    pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 5 });
-    bereit = pool.query(SCHEMA).then(() => undefined);
+    const p = new pg.Pool({ connectionString: url, max: 5 });
+    pool = p;
+    bereit = p
+      .query(SCHEMA)
+      .then(() => adminAusUmgebung(p as unknown as Db))
+      .catch((e) => {
+        // Beim nächsten Aufruf neu versuchen statt dauerhaft zu scheitern.
+        pool = null;
+        bereit = null;
+        void p.end().catch(() => undefined);
+        throw e;
+      });
   }
   await bereit;
   return pool as unknown as Db;

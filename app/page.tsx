@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
-import { KONTAKT_EMAIL } from "@/lib/config";
 
 export default function Startseite() {
   return (
@@ -23,9 +22,9 @@ export default function Startseite() {
             <Link href="/anlage" className="btn btn--dark btn--wide">
               Angebote vergleichen
             </Link>
-            <a href="#beratung" className="btn btn--outline btn--wide">
+            <Link href="/beratung" className="btn btn--outline btn--wide">
               Beratung vor Ort buchen
-            </a>
+            </Link>
           </div>
         </section>
 
@@ -77,9 +76,9 @@ export default function Startseite() {
             Bild: Techniker im Maschinenraum
           </div>
           <div className="btn-row">
-            <a href={`mailto:${KONTAKT_EMAIL}?subject=Beratung%20vor%20Ort`} className="btn btn--dark btn--wide">
+            <Link href="/beratung" className="btn btn--dark btn--wide">
               Beratung buchen
-            </a>
+            </Link>
             <a href="#ablauf" className="btn btn--outline btn--wide">
               Mehr erfahren
             </a>

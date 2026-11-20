@@ -226,7 +226,7 @@ export default function AnlageErfassen() {
               Viele Angaben sind offen. Eine Beratung vor Ort liefert genauere Angebote.
             </p>
           )}
-          <Link href="/#beratung" className="link-muted">
+          <Link href="/beratung" className="link-muted">
             Zu viele offene Angaben? Beratung vor Ort buchen
           </Link>
         </form>
