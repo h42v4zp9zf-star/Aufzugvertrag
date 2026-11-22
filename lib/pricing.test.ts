@@ -8,8 +8,8 @@ const modell = (firma: string, grund: number, extra: Partial<Preismodell> = {}):
   hersteller: "alle",
   antriebe: ["seil", "hydraulik"],
   pakete: [
-    { stufe: "basis", grundpreisChf: grund, reaktionszeitStd: 24 },
-    { stufe: "standard", grundpreisChf: grund + 500, reaktionszeitStd: 4 },
+    { stufe: "basis", grundpreisChf: grund, reaktionszeitStd: 24, pikett: "keine" },
+    { stufe: "standard", grundpreisChf: grund + 500, reaktionszeitStd: 4, pikett: "24h" },
   ],
   zuschlaege: {
     proHaltestelleUeber4Chf: 100,
@@ -71,7 +71,7 @@ test("Preis gilt pro Aufzug mal Anzahl, günstigstes vergleichbares Angebot zuer
 
 test("Bessere Servicewerte können einen höheren Preis aufwiegen", () => {
   const schnell = modell("Schnell", 1050, {
-    pakete: [{ stufe: "basis", grundpreisChf: 1050, reaktionszeitStd: 2 }],
+    pakete: [{ stufe: "basis", grundpreisChf: 1050, reaktionszeitStd: 2, pikett: "keine" }],
     bewertung: 5,
   });
   const r = vergleiche(anlage, [modell("Langsam", 1000), schnell]);
@@ -82,15 +82,25 @@ test("Wartungen pro Jahr sind pro Paket fix: Basis 2, Standard 4, Komplett 6", (
   const r = vergleiche(anlage, [
     modell("A", 1000, {
       pakete: [
-        { stufe: "basis", grundpreisChf: 1000, reaktionszeitStd: 24 },
-        { stufe: "standard", grundpreisChf: 1500, reaktionszeitStd: 4 },
-        { stufe: "komplett", grundpreisChf: 2500, reaktionszeitStd: 2 },
+        { stufe: "basis", grundpreisChf: 1000, reaktionszeitStd: 24, pikett: "keine" },
+        { stufe: "standard", grundpreisChf: 1500, reaktionszeitStd: 4, pikett: "tag" },
+        { stufe: "komplett", grundpreisChf: 2500, reaktionszeitStd: 2, pikett: "24h" },
       ],
     }),
   ]);
   assert.equal(r.basis[0].wartungenProJahr, 2);
   assert.equal(r.standard[0].wartungenProJahr, 4);
   assert.equal(r.komplett[0].wartungenProJahr, 6);
+});
+
+test("Pikett-Deckung erscheint im Angebot und zählt beim Service", () => {
+  const paket = (pikett: "24h" | "tag" | "keine") => [{ stufe: "standard" as const, grundpreisChf: 2000, reaktionszeitStd: 4, pikett }];
+  const r = vergleiche(anlage, [
+    modell("Ohne", 2000, { pakete: paket("keine") }),
+    modell("Tag", 2000, { pakete: paket("tag") }),
+    modell("Rund um die Uhr", 2000, { pakete: paket("24h") }),
+  ]);
+  assert.deepEqual(r.standard.map((a) => [a.firma, a.pikett]), [["Rund um die Uhr", "24h"], ["Tag", "tag"], ["Ohne", "keine"]]);
 });
 
 test("CHF-Format mit Schweizer Tausendertrennzeichen", () => {

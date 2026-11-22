@@ -1,12 +1,12 @@
 "use client";
 
 import { startTransition, useActionState, useState } from "react";
-import { chf, preisProAufzug, STUFEN, WARTUNGEN_PRO_STUFE, type Anlage, type Preismodell, type PreismodellDaten, type Stufe } from "@/lib/pricing";
+import { chf, PIKETT, PIKETT_STANDARD, PIKETT_TEXT, preisProAufzug, STUFEN, WARTUNGEN_PRO_STUFE, type Anlage, type Pikett, type Preismodell, type PreismodellDaten, type Stufe } from "@/lib/pricing";
 import { HERSTELLER, PLZ_KREISE, STUFEN_NAMEN } from "@/lib/stammdaten";
 import { preiseSpeichern, type FormStatus } from "../actions";
 import { Fehlerliste } from "../Formulare";
 
-type PaketWerte = { an: boolean; grundpreis: string; reaktion: string };
+type PaketWerte = { an: boolean; grundpreis: string; reaktion: string; pikett: Pikett };
 type Zuschlag = "z_halte" | "z_hydraulik" | "z_alter" | "z_brandfall" | "z_tuer";
 
 const ZUSCHLAEGE: { key: Zuschlag; label: string; feld: keyof PreismodellDaten["zuschlaege"] }[] = [
@@ -47,8 +47,8 @@ export function PreisFormular({ gespeichert, veroeffentlicht }: { gespeichert: P
     for (const s of STUFEN) {
       const p = gespeichert?.pakete.find((x) => x.stufe === s);
       init[s] = p
-        ? { an: true, grundpreis: String(p.grundpreisChf), reaktion: String(p.reaktionszeitStd) }
-        : { an: !gespeichert, grundpreis: "", reaktion: "" };
+        ? { an: true, grundpreis: String(p.grundpreisChf), reaktion: String(p.reaktionszeitStd), pikett: p.pikett ?? PIKETT_STANDARD[s] }
+        : { an: !gespeichert, grundpreis: "", reaktion: "", pikett: PIKETT_STANDARD[s] };
     }
     return init;
   });
@@ -84,7 +84,7 @@ export function PreisFormular({ gespeichert, veroeffentlicht }: { gespeichert: P
     const p = pakete[s];
     if (!p.an) return "nicht angeboten";
     if (p.grundpreis.trim() === "" || !Number.isFinite(n(p.grundpreis))) return "–";
-    const preis = preisProAufzug(vorschauModell, { stufe: s, grundpreisChf: n(p.grundpreis), reaktionszeitStd: 1 }, BEISPIEL, []);
+    const preis = preisProAufzug(vorschauModell, { stufe: s, grundpreisChf: n(p.grundpreis), reaktionszeitStd: 1, pikett: p.pikett }, BEISPIEL, []);
     return preis === null ? "–" : chf(Math.round(preis));
   };
 
@@ -174,6 +174,16 @@ export function PreisFormular({ gespeichert, veroeffentlicht }: { gespeichert: P
                       Reaktionszeit bei Störung (Std.)
                       <input name={`${s}_reaktion`} inputMode="decimal" value={p.reaktion} onChange={(e) => setPaket(s, "reaktion", e.target.value)} required />
                     </label>
+                    <label className="field">
+                      Pikett-Deckung (Störungsdienst)
+                      <select name={`${s}_pikett`} value={p.pikett} onChange={(e) => setPaket(s, "pikett", e.target.value)} required>
+                        {PIKETT.map((k) => (
+                          <option key={k} value={k}>
+                            {PIKETT_TEXT[k]}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                   </>
                 )}
               </div>
@@ -182,7 +192,8 @@ export function PreisFormular({ gespeichert, veroeffentlicht }: { gespeichert: P
         </div>
         <p className="muted">
           Leistungen je Paket: Basis = 2 Wartungen pro Jahr, Inspektion, Notruf und Personenbefreiung. Standard = 4 Wartungen pro Jahr,
-          zusätzlich Störungseinsätze 24/7. Komplett = 6 Wartungen pro Jahr, zusätzlich Reparaturen und Verschleissteile.
+          zusätzlich Störungseinsätze. Komplett = 6 Wartungen pro Jahr, zusätzlich Reparaturen und Verschleissteile. Zu welchen Zeiten Ihr
+          Störungsdienst ausrückt (Pikett-Deckung), wählen Sie pro Paket.
         </p>
       </fieldset>
 

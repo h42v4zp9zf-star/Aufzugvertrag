@@ -1,5 +1,5 @@
 // Liest und prüft das Preisformular einer Liftfirma.
-import { STUFEN, type Antrieb, type Paket, type PreismodellDaten } from "./pricing.ts";
+import { PIKETT, STUFEN, type Antrieb, type Paket, type Pikett, type PreismodellDaten } from "./pricing.ts";
 
 export interface FormLike {
   get(name: string): FormDataEntryValue | null;
@@ -52,10 +52,13 @@ export function leseFormular(form: FormLike): FormErgebnis {
   for (const stufe of STUFEN) {
     if (!an(form, `${stufe}_angeboten`)) continue;
     const name = stufe[0].toUpperCase() + stufe.slice(1);
+    const pikett = String(form.get(`${stufe}_pikett`) ?? "") as Pikett;
+    if (!PIKETT.includes(pikett)) fehler.push(`${name}: bitte die Pikett-Deckung wählen.`);
     pakete.push({
       stufe,
       grundpreisChf: Math.round(zahl(form, `${stufe}_grundpreis`, GRENZEN.grundpreis, `${name}: Grundpreis`, fehler)),
       reaktionszeitStd: zahl(form, `${stufe}_reaktion`, GRENZEN.reaktion, `${name}: Reaktionszeit`, fehler),
+      pikett,
     });
   }
   if (pakete.length === 0) fehler.push("Pakete: mindestens ein Paket anbieten.");

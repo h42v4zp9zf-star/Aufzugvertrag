@@ -1,6 +1,6 @@
 // Alle Datenbankabfragen an einem Ort.
 import type { Db } from "./db.ts";
-import type { Anlage, Preismodell, PreismodellDaten, Stufe } from "./pricing.ts";
+import { PIKETT_STANDARD, type Anlage, type Preismodell, type PreismodellDaten, type Stufe } from "./pricing.ts";
 
 export type Rolle = "firma" | "admin";
 export type KontoStatus = "pruefung" | "aktiv" | "gesperrt";
@@ -92,12 +92,17 @@ export async function preismodellSpeichern(d: Db, kontoId: number, daten: Preism
   );
 }
 
+// Pakete, die vor der Pikett-Angabe gespeichert wurden, bekommen die bisherige Deckung.
+function mitPikett(daten: PreismodellDaten): PreismodellDaten {
+  return { ...daten, pakete: daten.pakete.map((p) => ({ ...p, pikett: p.pikett ?? PIKETT_STANDARD[p.stufe] })) };
+}
+
 export async function preismodellLaden(d: Db, kontoId: number): Promise<{ daten: PreismodellDaten; veroeffentlicht: boolean; geaendert_am: Date } | null> {
   const { rows } = await d.query<{ daten: PreismodellDaten; veroeffentlicht: boolean; geaendert_am: Date }>(
     `SELECT daten, veroeffentlicht, geaendert_am FROM preismodelle WHERE konto_id = $1`,
     [kontoId],
   );
-  return rows[0] ?? null;
+  return rows[0] ? { ...rows[0], daten: mitPikett(rows[0].daten) } : null;
 }
 
 // Nur Preismodelle von freigeschalteten Firmen, die ihre Preise veröffentlicht haben.
@@ -106,7 +111,7 @@ export async function aktivePreismodelle(d: Db): Promise<Preismodell[]> {
     `SELECT k.id, k.firma, p.daten FROM preismodelle p JOIN konten k ON k.id = p.konto_id
       WHERE p.veroeffentlicht AND k.status = 'aktiv' AND k.rolle = 'firma'`,
   );
-  return rows.map((r) => ({ ...r.daten, firma: r.firma, firmaId: r.id, bewertung: NEUTRALE_BEWERTUNG }));
+  return rows.map((r) => ({ ...mitPikett(r.daten), firma: r.firma, firmaId: r.id, bewertung: NEUTRALE_BEWERTUNG }));
 }
 
 export async function anfrageAnlegen(

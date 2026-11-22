@@ -15,6 +15,7 @@ import {
   kontoMitHashPerEmail,
   kontoPerSitzung,
   kontoStatusSetzen,
+  preismodellLaden,
   preismodellSpeichern,
   sitzungAnlegen,
   sitzungLoeschen,
@@ -45,7 +46,7 @@ const DATEN: PreismodellDaten = {
   plzPraefixe: ["8"],
   hersteller: "alle",
   antriebe: ["seil"],
-  pakete: [{ stufe: "basis", grundpreisChf: 1000, reaktionszeitStd: 24 }],
+  pakete: [{ stufe: "basis", grundpreisChf: 1000, reaktionszeitStd: 24, pikett: "tag" }],
   zuschlaege: { proHaltestelleUeber4Chf: 0, hydraulikChf: 0, alterUeber25JahreChf: 0, brandfallsteuerungChf: 0, proKabinenabschlusstuerChf: 0 },
   optionen: { fernueberwachung: null, verfuegbarkeit: null, ausserhalb: null },
 };
@@ -79,6 +80,7 @@ test("Konto, Sitzung, Freischaltung, Preismodell und Anfrage", { skip }, async (
   assert.equal(aktiv.length, 1);
   assert.equal(aktiv[0].firma, "Test AG");
   assert.equal(aktiv[0].firmaId, k.id);
+  assert.equal(aktiv[0].pakete[0].pikett, "tag");
 
   await preismodellSpeichern(d, k.id, DATEN, false);
   assert.equal((await aktivePreismodelle(d)).length, 0, "nicht veröffentlicht → nicht sichtbar");
@@ -124,4 +126,20 @@ test("Beratung vor Ort wird gespeichert", { skip }, async () => {
   assert.equal(liste.length, 1);
   assert.equal(liste[0].anzahl_aufzuege, 2);
   assert.equal(liste[0].bemerkung, "Bitte vormittags");
+});
+
+test("Früher gespeicherte Pakete ohne Pikett-Angabe bekommen die bisherige Deckung", { skip }, async () => {
+  const k = await kontoAnlegen(d, { firma: "Alt AG", uid: "CHE-111.111.111", email: "alt@example.ch", passwortHash: "x" });
+  await kontoStatusSetzen(d, k.id, "aktiv");
+  const alt = {
+    ...DATEN,
+    pakete: [
+      { stufe: "basis", grundpreisChf: 1000, reaktionszeitStd: 24 },
+      { stufe: "standard", grundpreisChf: 2000, reaktionszeitStd: 4 },
+    ],
+  } as unknown as PreismodellDaten;
+  await preismodellSpeichern(d, k.id, alt, true);
+  const m = (await aktivePreismodelle(d)).find((x) => x.firmaId === k.id)!;
+  assert.deepEqual(m.pakete.map((p) => p.pikett), ["keine", "24h"]);
+  assert.deepEqual((await preismodellLaden(d, k.id))?.daten.pakete.map((p) => p.pikett), ["keine", "24h"]);
 });

@@ -9,9 +9,9 @@ export const BEISPIELMODELLE: Preismodell[] = [
     hersteller: "alle",
     antriebe: ["seil", "hydraulik"],
     pakete: [
-      { stufe: "basis", grundpreisChf: 1450, reaktionszeitStd: 24 },
-      { stufe: "standard", grundpreisChf: 2150, reaktionszeitStd: 4 },
-      { stufe: "komplett", grundpreisChf: 3400, reaktionszeitStd: 2 },
+      { stufe: "basis", grundpreisChf: 1450, reaktionszeitStd: 24, pikett: "keine" },
+      { stufe: "standard", grundpreisChf: 2150, reaktionszeitStd: 4, pikett: "24h" },
+      { stufe: "komplett", grundpreisChf: 3400, reaktionszeitStd: 2, pikett: "24h" },
     ],
     zuschlaege: {
       proHaltestelleUeber4Chf: 90,
@@ -29,9 +29,9 @@ export const BEISPIELMODELLE: Preismodell[] = [
     hersteller: "alle",
     antriebe: ["seil", "hydraulik"],
     pakete: [
-      { stufe: "basis", grundpreisChf: 1290, reaktionszeitStd: 24 },
-      { stufe: "standard", grundpreisChf: 2290, reaktionszeitStd: 6 },
-      { stufe: "komplett", grundpreisChf: 3250, reaktionszeitStd: 4 },
+      { stufe: "basis", grundpreisChf: 1290, reaktionszeitStd: 24, pikett: "keine" },
+      { stufe: "standard", grundpreisChf: 2290, reaktionszeitStd: 6, pikett: "tag" },
+      { stufe: "komplett", grundpreisChf: 3250, reaktionszeitStd: 4, pikett: "24h" },
     ],
     zuschlaege: {
       proHaltestelleUeber4Chf: 70,
@@ -49,9 +49,9 @@ export const BEISPIELMODELLE: Preismodell[] = [
     hersteller: ["Schindler", "KONE", "Otis", "Emch"],
     antriebe: ["seil"],
     pakete: [
-      { stufe: "basis", grundpreisChf: 1550, reaktionszeitStd: 12 },
-      { stufe: "standard", grundpreisChf: 2050, reaktionszeitStd: 3 },
-      { stufe: "komplett", grundpreisChf: 3600, reaktionszeitStd: 2 },
+      { stufe: "basis", grundpreisChf: 1550, reaktionszeitStd: 12, pikett: "tag" },
+      { stufe: "standard", grundpreisChf: 2050, reaktionszeitStd: 3, pikett: "24h" },
+      { stufe: "komplett", grundpreisChf: 3600, reaktionszeitStd: 2, pikett: "24h" },
     ],
     zuschlaege: {
       proHaltestelleUeber4Chf: 110,
@@ -69,8 +69,8 @@ export const BEISPIELMODELLE: Preismodell[] = [
     hersteller: "alle",
     antriebe: ["seil", "hydraulik"],
     pakete: [
-      { stufe: "basis", grundpreisChf: 1380, reaktionszeitStd: 24 },
-      { stufe: "standard", grundpreisChf: 2200, reaktionszeitStd: 5 },
+      { stufe: "basis", grundpreisChf: 1380, reaktionszeitStd: 24, pikett: "keine" },
+      { stufe: "standard", grundpreisChf: 2200, reaktionszeitStd: 5, pikett: "24h" },
     ],
     zuschlaege: {
       proHaltestelleUeber4Chf: 85,
