@@ -8,27 +8,40 @@ import {
   chf,
   STUFEN,
   vergleiche,
+  PIKETT_STANDARD,
   VERMITTLUNGSGEBUEHR_CHF,
   WARTUNGEN_PRO_STUFE,
   type Angebot,
+  type Pikett,
   type Preismodell,
   type Stufe,
 } from "@/lib/pricing";
 import { anfrageSenden } from "./actions";
 
-const STUFE_INFO: Record<Stufe, { name: string; tag: string; leistungen: number }> = {
-  basis: { name: "Basis", tag: "Gesetzliche Pflichten erfüllt", leistungen: 2 },
-  standard: { name: "Standard", tag: "Hilfe rund um die Uhr", leistungen: 3 },
-  komplett: { name: "Komplett", tag: "Reparaturen inklusive", leistungen: 4 },
+const STUFE_INFO: Record<Stufe, { name: string; tag: string }> = {
+  basis: { name: "Basis", tag: "Gesetzliche Pflichten erfüllt" },
+  standard: { name: "Standard", tag: "Mit Störungsdienst" },
+  komplett: { name: "Komplett", tag: "Reparaturen inklusive" },
 };
 
-// Die erste Leistung (Anzahl Wartungen) hängt vom Paket ab und kommt aus WARTUNGEN_PRO_STUFE.
-const LEISTUNGEN = [
-  "Wartungen pro Jahr, inkl. Inspektion",
-  "Notruf und Personenbefreiung",
-  "Störungseinsätze 24/7",
-  "Reparaturen und Verschleissteile",
-];
+// Pikett-Deckung wählt jede Liftfirma pro Paket.
+const PIKETT_LEISTUNG: Record<Pikett, string> = {
+  "24h": "Pikett-Störungsdienst 24 Stunden",
+  tag: "Pikett-Störungsdienst 7–17 Uhr",
+  keine: "Kein Pikett-Störungsdienst",
+};
+const PIKETT_KURZ: Record<Pikett, string> = { "24h": "24 Std.", tag: "7–17 Uhr", keine: "keine" };
+
+// Leistungen eines Pakets: Wartungen fix pro Stufe, Pikett vom Angebot der Liftfirma.
+function leistungen(s: Stufe, a: Angebot | undefined): { text: string; an: boolean }[] {
+  const pikett = a?.pikett ?? PIKETT_STANDARD[s];
+  return [
+    { text: `${WARTUNGEN_PRO_STUFE[s]} Wartungen pro Jahr, inkl. Inspektion`, an: true },
+    { text: "Notruf und Personenbefreiung", an: true },
+    { text: PIKETT_LEISTUNG[pikett], an: pikett !== "keine" },
+    { text: "Reparaturen und Verschleissteile", an: s === "komplett" },
+  ];
+}
 
 function Check({ on }: { on: boolean }) {
   return on ? (
@@ -113,15 +126,12 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
                 <p className="empty">Für Ihre Anlage gibt es in dieser Stufe noch kein Angebot.</p>
               )}
               <ul className="features">
-                {LEISTUNGEN.map((l, i) => {
-                  const on = i < info.leistungen;
-                  return (
-                    <li key={l} className={on ? "" : "off"}>
-                      <Check on={on} />
-                      <span>{i === 0 ? `${WARTUNGEN_PRO_STUFE[s]} ${l}` : l}</span>
-                    </li>
-                  );
-                })}
+                {leistungen(s, a).map((l) => (
+                  <li key={l.text} className={l.an ? "" : "off"}>
+                    <Check on={l.an} />
+                    <span>{l.text}</span>
+                  </li>
+                ))}
               </ul>
               {a && (
                 <div className="metrics">
@@ -159,6 +169,7 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
                   <th>Liftfirma</th>
                   <th>Preis pro Jahr</th>
                   <th>Reaktionszeit</th>
+                  <th>Pikett</th>
                   <th className="right">
                     <span className="sr-only">Aktion</span>
                   </th>
@@ -170,6 +181,7 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
                     <td>{a.firma}</td>
                     <td>{chf(a.preisProJahrChf)}</td>
                     <td>{a.reaktionszeitStd} Std.</td>
+                    <td>{PIKETT_KURZ[a.pikett]}</td>
                     <td className="right">
                       <button type="button" className="linkbtn" onClick={() => {
                           setGewaehlt((g) => ({ ...g, [stufe]: a.firma }));

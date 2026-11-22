@@ -29,10 +29,23 @@ export interface Anlage {
 // damit die Pakete aller Liftfirmen vergleichbar sind.
 export const WARTUNGEN_PRO_STUFE: Record<Stufe, number> = { basis: 2, standard: 4, komplett: 6 };
 
+// Pikett-Deckung (Zeiten des Störungsdienstes), wählt die Liftfirma pro Paket (Wunsch Dario, 22.11.2026).
+export type Pikett = "24h" | "tag" | "keine";
+export const PIKETT: Pikett[] = ["24h", "tag", "keine"];
+export const PIKETT_TEXT: Record<Pikett, string> = {
+  "24h": "24 Stunden",
+  tag: "7–17 Uhr",
+  keine: "Keine Pikett-Deckung",
+};
+// Für Pakete, die vor dieser Angabe gespeichert wurden (bisherige Paketbeschreibung).
+export const PIKETT_STANDARD: Record<Stufe, Pikett> = { basis: "keine", standard: "24h", komplett: "24h" };
+const PIKETT_WERT: Record<Pikett, number> = { "24h": 1, tag: 0.5, keine: 0 };
+
 export interface Paket {
   stufe: Stufe;
   grundpreisChf: number; // pro Aufzug und Jahr
   reaktionszeitStd: number;
+  pikett: Pikett;
 }
 
 // Was eine Liftfirma im Portal erfasst (ohne Name und Bewertung).
@@ -63,6 +76,7 @@ export interface Angebot {
   preisProJahrChf: number;
   wartungenProJahr: number;
   reaktionszeitStd: number;
+  pikett: Pikett;
   bewertung: number;
   score: number;
 }
@@ -100,7 +114,7 @@ export function preisProAufzug(
   return preis;
 }
 
-// Gewichtung laut Konzept: 60 % Preis, 25 % Service (Reaktionszeit), 15 % Bewertung.
+// Gewichtung laut Konzept: 60 % Preis, 25 % Service (Reaktionszeit und Pikett-Deckung), 15 % Bewertung.
 export function vergleiche(
   anlage: Anlage,
   modelle: Preismodell[],
@@ -124,17 +138,20 @@ export function vergleiche(
         preisProJahrChf: Math.round(proAufzug * anzahl),
         wartungenProJahr: WARTUNGEN_PRO_STUFE[stufe],
         reaktionszeitStd: paket.reaktionszeitStd,
+        pikett: paket.pikett ?? PIKETT_STANDARD[stufe],
         bewertung: m.bewertung,
       });
     }
     if (roh.length === 0) continue;
     const minPreis = Math.min(...roh.map((a) => a.preisProJahrChf));
     const minReaktion = Math.min(...roh.map((a) => a.reaktionszeitStd));
+    const maxPikett = Math.max(...roh.map((a) => PIKETT_WERT[a.pikett]));
     result[stufe] = roh
       .map((a) => {
         const preisScore = minPreis / a.preisProJahrChf;
-        // Wartungen sind pro Stufe gleich, also zählt beim Service nur die Reaktionszeit.
-        const serviceScore = minReaktion / a.reaktionszeitStd;
+        // Wartungen sind pro Stufe gleich; beim Service zählen Reaktionszeit und Pikett-Deckung je zur Hälfte.
+        const pikettScore = maxPikett > 0 ? PIKETT_WERT[a.pikett] / maxPikett : 1;
+        const serviceScore = (minReaktion / a.reaktionszeitStd + pikettScore) / 2;
         const score = 0.6 * preisScore + 0.25 * serviceScore + 0.15 * (a.bewertung / 5);
         return { ...a, score: Math.round(score * 1000) / 1000 };
       })

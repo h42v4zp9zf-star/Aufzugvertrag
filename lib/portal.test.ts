@@ -16,6 +16,7 @@ const GUELTIG = {
   standard_angeboten: "on",
   standard_grundpreis: "2'150",
   standard_reaktion: "4",
+  standard_pikett: "tag",
   z_halte: "90",
   z_hydraulik: "150",
   z_alter: "300",
@@ -49,7 +50,7 @@ test("Gültiges Preisformular ergibt ein Preismodell", () => {
   assert.deepEqual(r.daten?.plzPraefixe, ["8", "9"]);
   assert.equal(r.daten?.hersteller, "alle");
   assert.deepEqual(r.daten?.antriebe, ["seil"]);
-  assert.deepEqual(r.daten?.pakete, [{ stufe: "standard", grundpreisChf: 2150, reaktionszeitStd: 4 }]);
+  assert.deepEqual(r.daten?.pakete, [{ stufe: "standard", grundpreisChf: 2150, reaktionszeitStd: 4, pikett: "tag" }]);
   assert.equal(r.daten?.zuschlaege.proHaltestelleUeber4Chf, 90);
   assert.equal(r.daten?.optionen.fernueberwachung, null);
 });
@@ -64,6 +65,12 @@ test("Ungültige Zahlen werden gemeldet", () => {
   const r = leseFormular(formular({ ...GUELTIG, standard_grundpreis: "abc", standard_reaktion: "999" }));
   assert.equal(r.daten, null);
   assert.equal(r.fehler.length, 2);
+});
+
+test("Unbekannte Pikett-Deckung wird gemeldet", () => {
+  const r = leseFormular(formular({ ...GUELTIG, standard_pikett: "nachts" }));
+  assert.equal(r.daten, null);
+  assert.deepEqual(r.fehler, ["Standard: bitte die Pikett-Deckung wählen."]);
 });
 
 test("Ausgewählte Hersteller statt alle", () => {
