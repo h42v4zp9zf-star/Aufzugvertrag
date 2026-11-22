@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
@@ -15,8 +16,14 @@ export default function Startseite() {
               passenden Wartungsvertrag wählen.
             </p>
           </div>
-          <div className="placeholder" aria-hidden="true">
-            Bild: Aufzugskabine in Schwarzweiss
+          <div className="hero__bild">
+            <Image
+              src="/bilder/aufzugsschacht.jpg"
+              alt="Gläserner Aufzugsschacht, von unten gesehen"
+              fill
+              priority
+              sizes="(max-width: 688px) 100vw, 640px"
+            />
           </div>
           <div className="btn-row">
             <Link href="/anlage" className="btn btn--dark btn--wide">
@@ -72,8 +79,14 @@ export default function Startseite() {
               Anfangspauschale CHF 130, danach nach Aufwand.
             </p>
           </div>
-          <div className="placeholder" aria-hidden="true">
-            Bild: Techniker im Maschinenraum
+          <div className="hero__bild">
+            <Image
+              src="/bilder/maschinenraum.jpg"
+              alt="Maschinenraum mit Aufzugsantrieb und Steuerschränken"
+              fill
+              style={{ objectPosition: "50% 58%" }}
+              sizes="(max-width: 688px) 100vw, 640px"
+            />
           </div>
           <div className="btn-row">
             <Link href="/beratung" className="btn btn--dark btn--wide">

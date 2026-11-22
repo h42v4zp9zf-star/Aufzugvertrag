@@ -42,6 +42,9 @@ h1, h2, h3, p { margin: 0; }
 .hero h2 { font-size: clamp(28px, 4vw, 36px); font-weight: 500; }
 .lead { font-size: 16px; line-height: 1.5; max-width: 560px; color: var(--muted); }
 .placeholder { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
+.hero__bild { position: relative; flex: 1 1 auto; width: min(100%, 640px); min-height: 280px; max-height: 520px; margin: 40px 0; border-radius: 12px; overflow: hidden; background: var(--line); }
+.hero__bild img { object-fit: cover; }
+.hero--compact .hero__bild { min-height: 340px; }
 
 .section { padding: 112px 24px; display: flex; flex-direction: column; align-items: center; gap: 56px; text-align: center; }
 .section--compact { gap: 32px; }
@@ -127,6 +130,9 @@ td.right, th.right { text-align: right; }
 
 @media (max-width: 600px) {
   .header { padding: 16px 20px; }
+  /* Auf dem Handy bricht die Navigation um: Kopfzeile nicht über den Titel legen. */
+  .header--overlay { position: static; }
+  .header--overlay + main > .hero:first-child { padding-top: 40px; }
   .config__form { padding: 32px 20px 48px; }
   .grid2 { grid-template-columns: minmax(0, 1fr); }
   .summary { padding: 24px; }
