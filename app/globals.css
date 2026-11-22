@@ -25,6 +25,28 @@ h1, h2, h3, p { margin: 0; }
 .nav a { padding: 8px 14px; border-radius: var(--radius); }
 .nav a:hover { background: rgba(127, 127, 127, 0.15); }
 .step { font-size: 14px; color: var(--muted); }
+.menu { display: contents; }
+.menu-btn { display: none; align-items: center; justify-content: center; width: 44px; height: 44px; margin-right: -10px; padding: 0; background: none; border: 0; border-radius: var(--radius); cursor: pointer; }
+.menu-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.menu-icon, .menu-icon::before, .menu-icon::after { display: block; width: 20px; height: 2px; border-radius: 1px; background: var(--ink); transition: transform .2s, background-color .2s; }
+.menu-icon { position: relative; }
+.menu-icon::before, .menu-icon::after { content: ""; position: absolute; left: 0; }
+.menu-icon::before { top: -6px; }
+.menu-icon::after { top: 6px; }
+.menu-icon--x { background: transparent; }
+.menu-icon--x::before { top: 0; transform: rotate(45deg); }
+.menu-icon--x::after { top: 0; transform: rotate(-45deg); }
+@media (max-width: 760px) {
+  .menu-btn { display: inline-flex; }
+  .menu { display: none; width: 100%; flex-direction: column; border-top: 1px solid var(--line); }
+  .menu--offen { display: flex; }
+  .menu .nav { flex-direction: column; gap: 0; }
+  .menu .nav a { display: flex; align-items: center; min-height: 52px; padding: 0 2px; font-size: 16px; border-radius: 0; border-bottom: 1px solid var(--line); }
+  .menu .nav a:hover { background: none; }
+  /* Auf dem Handy liegt die Kopfzeile nicht über dem Titel, sondern darüber. */
+  .header--overlay { position: static; }
+  .header--overlay + main > .hero:first-child { padding-top: 40px; }
+}
 
 /* Buttons */
 .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 28px; border-radius: var(--radius); font-size: 14px; font-weight: 500; border: 1px solid transparent; cursor: pointer; transition: opacity .15s; }
@@ -65,7 +87,7 @@ h1, h2, h3, p { margin: 0; }
 .config__title { font-size: 28px; font-weight: 500; }
 .config__stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; width: 100%; max-width: 520px; }
 .config__stats strong { display: block; font-size: clamp(17px, 5vw, 24px); font-weight: 500; overflow-wrap: anywhere; }
-.config__stats span { font-size: 12px; color: var(--muted); }
+.config__stats span { display: block; font-size: 12px; color: var(--muted); hyphens: auto; overflow-wrap: break-word; }
 .config__form { flex: 1 1 420px; min-width: 0; max-width: 560px; padding: 48px 40px 64px; display: flex; flex-direction: column; gap: 32px; }
 .config__form h1 { font-size: 32px; font-weight: 500; }
 .hint { font-size: 14px; color: var(--muted); line-height: 1.5; margin-top: 8px; }
@@ -130,9 +152,9 @@ td.right, th.right { text-align: right; }
 
 @media (max-width: 600px) {
   .header { padding: 16px 20px; }
-  /* Auf dem Handy bricht die Navigation um: Kopfzeile nicht über den Titel legen. */
-  .header--overlay { position: static; }
-  .header--overlay + main > .hero:first-child { padding-top: 40px; }
+  .config__visual { min-height: 0; padding: 32px 20px; gap: 24px; }
+  .config__stats { gap: 12px; }
+  .config__stats strong { font-size: clamp(16px, 4.6vw, 24px); }
   .config__form { padding: 32px 20px 48px; }
   .grid2 { grid-template-columns: minmax(0, 1fr); }
   .summary { padding: 24px; }
