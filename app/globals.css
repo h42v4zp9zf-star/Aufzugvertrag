@@ -22,7 +22,7 @@ h1, h2, h3, p { margin: 0; }
 .header--bar { border-bottom: 1px solid var(--line); }
 .logo { display: inline-flex; align-items: center; min-height: 44px; }
 .logo img { display: block; height: 22px; width: auto; }
-.nav { display: flex; flex-wrap: wrap; gap: 4px; font-size: 14px; font-weight: 500; }
+.nav { display: flex; flex-wrap: wrap; gap: 4px; font-size: 16px; font-weight: 500; }
 .nav a { padding: 8px 14px; border-radius: var(--radius); }
 .nav a:hover { background: rgba(127, 127, 127, 0.15); }
 .step { font-size: 14px; color: var(--muted); }
@@ -37,12 +37,12 @@ h1, h2, h3, p { margin: 0; }
 .menu-icon--x { background: transparent; }
 .menu-icon--x::before { top: 0; transform: rotate(45deg); }
 .menu-icon--x::after { top: 0; transform: rotate(-45deg); }
-@media (max-width: 760px) {
+@media (max-width: 920px) {
   .menu-btn { display: inline-flex; }
   .menu { display: none; width: 100%; flex-direction: column; border-top: 1px solid var(--line); }
   .menu--offen { display: flex; }
   .menu .nav { flex-direction: column; gap: 0; }
-  .menu .nav a { display: flex; align-items: center; min-height: 52px; padding: 0 2px; font-size: 16px; border-radius: 0; border-bottom: 1px solid var(--line); }
+  .menu .nav a { display: flex; align-items: center; min-height: 56px; padding: 0 2px; font-size: 18px; border-radius: 0; border-bottom: 1px solid var(--line); }
   .menu .nav a:hover { background: none; }
   /* Auf dem Handy liegt die Kopfzeile nicht über dem Titel, sondern darüber. */
   .header--overlay { position: static; }
@@ -58,15 +58,18 @@ h1, h2, h3, p { margin: 0; }
 .btn-row { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; width: 100%; max-width: 680px; }
 
 /* Sections */
-.hero { position: relative; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 112px 24px 72px; text-align: center; }
+.hero { position: relative; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 140px 24px 72px; text-align: center; }
 .hero--compact { min-height: 640px; padding-top: 96px; }
 .hero__text { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .hero h1 { font-size: clamp(32px, 5vw, 44px); font-weight: 500; letter-spacing: -0.01em; }
 .hero h2 { font-size: clamp(28px, 4vw, 36px); font-weight: 500; }
 .lead { font-size: 16px; line-height: 1.5; max-width: 560px; color: var(--muted); }
 .placeholder { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
-.hero__bild { position: relative; flex: 1 1 auto; width: min(100%, 640px); min-height: 280px; max-height: 860px; margin: 30px 0 34px; border-radius: 12px; overflow: hidden; background: var(--line); }
+.hero__bild { position: relative; flex: 1 1 auto; width: min(100%, 640px); min-height: 280px; max-height: 520px; margin: 30px 0 34px; border-radius: 12px; overflow: hidden; background: var(--line); }
 .hero__bild img { object-fit: cover; }
+/* Erstes Bild auf der Startseite: so gross wie von Dario eingezeichnet (bis 1040 × 715 px),
+   auf kleineren Bildschirmen im selben Seitenverhältnis kleiner, damit die Knöpfe sichtbar bleiben. */
+.hero:not(.hero--compact) .hero__bild { --bild-h: clamp(280px, calc(100svh - 430px), 715px); flex: none; height: var(--bild-h); min-height: 0; max-height: none; width: min(100%, 1040px, max(640px, calc(var(--bild-h) * 1.455))); }
 .hero--compact .hero__bild { min-height: 340px; }
 
 .section { padding: 112px 24px; display: flex; flex-direction: column; align-items: center; gap: 56px; text-align: center; }

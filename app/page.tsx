@@ -23,7 +23,7 @@ export default function Startseite() {
               alt="Gläserner Aufzugsschacht, von unten gesehen"
               fill
               priority
-              sizes="(max-width: 688px) 100vw, 640px"
+              sizes="(max-width: 1088px) 100vw, 1040px"
             />
           </div>
           <div className="btn-row">
