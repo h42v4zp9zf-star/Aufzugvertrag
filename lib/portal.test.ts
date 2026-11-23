@@ -22,6 +22,7 @@ const GUELTIG = {
   z_alter: "300",
   z_brandfall: "120",
   z_tuer: "80",
+  z_sicherheit: "60",
   veroeffentlicht: "on",
 };
 
@@ -52,11 +53,12 @@ test("Gültiges Preisformular ergibt ein Preismodell", () => {
   assert.deepEqual(r.daten?.antriebe, ["seil"]);
   assert.deepEqual(r.daten?.pakete, [{ stufe: "standard", grundpreisChf: 2150, reaktionszeitStd: 4, pikett: "tag" }]);
   assert.equal(r.daten?.zuschlaege.proHaltestelleUeber4Chf, 90);
+  assert.equal(r.daten?.zuschlaege.sicherheitsdispositivChf, 60);
   assert.equal(r.daten?.optionen.fernueberwachung, null);
 });
 
 test("Fehlende Pflichtangaben werden gemeldet", () => {
-  const r = leseFormular(formular({ z_halte: "0", z_hydraulik: "0", z_alter: "0", z_brandfall: "0", z_tuer: "0" }));
+  const r = leseFormular(formular({ z_halte: "0", z_hydraulik: "0", z_alter: "0", z_brandfall: "0", z_tuer: "0", z_sicherheit: "0" }));
   assert.equal(r.daten, null);
   assert.equal(r.fehler.length, 4); // Einzugsgebiet, Hersteller, Antriebe, Pakete
 });

@@ -521,6 +521,12 @@ export function ChecklisteForm({ beratung, start, serverFotos }: { beratung: Ber
             />
             <Wahl label="Kabinenabschlusstüren" optionen={JA_NEIN} wert={a.kabinenabschlusstueren} setzen={(v) => set((x) => void (x.kabinenabschlusstueren = v))} />
             <Wahl label="Brandfallsteuerung" optionen={JA_NEIN_UNBEKANNT} wert={a.brandfall} setzen={(v) => set((x) => void (x.brandfall = v))} />
+            <Wahl
+              label="Sicherheitsdispositiv (Schutzeinrichtung bei zu kleinem Schachtkopf oder Grube)"
+              optionen={JA_NEIN_UNBEKANNT}
+              wert={a.sicherheitsdispositiv}
+              setzen={(v) => set((x) => void (x.sicherheitsdispositiv = v))}
+            />
             <Wahl label="Notruf: Telefon in der Kabine" optionen={JA_NEIN} wert={a.notruf} setzen={(v) => set((x) => void (x.notruf = v))} />
             {a.notruf === "ja" && (
               <Feld label="Notruf verbunden mit" platzhalter="z. B. Liftfirma oder Notrufzentrale" wert={a.notrufVerbunden} setzen={(v) => set((x) => void (x.notrufVerbunden = v))} />

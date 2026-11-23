@@ -89,7 +89,7 @@ test("Anlage für den Angebotsvergleich aus der Checkliste", () => {
 
   const d = leereCheckliste(2);
   assert.equal(anlageAusCheckliste(d, "Seestrasse 12, 8004 Zürich"), null, "ohne Pflichtangaben");
-  Object.assign(d.aufzuege[0], { antrieb: "seil", haltestellen: "6", hersteller: "Schindler", baujahr: "1998", geschwindigkeit: "1,6", traglastKg: "630" });
+  Object.assign(d.aufzuege[0], { antrieb: "seil", haltestellen: "6", hersteller: "Schindler", baujahr: "1998", geschwindigkeit: "1,6", traglastKg: "630", sicherheitsdispositiv: "ja" });
   d.liegenschaft.attika = "ja";
   const a = anlageAusCheckliste(d, "Seestrasse 12, 8004 Zürich");
   assert.deepEqual(a, {
@@ -102,8 +102,18 @@ test("Anlage für den Angebotsvergleich aus der Checkliste", () => {
     haltestellen: 6,
     brandfallsteuerung: "unbekannt",
     attika: "ja",
+    sicherheitsdispositiv: "ja",
     baujahr: 1998,
     traglastKg: 630,
     geschwindigkeitMs: 1.6,
   });
+});
+
+test("Sicherheitsdispositiv: nur gültige Werte, ältere Checklisten ohne Angabe", () => {
+  const neu = checklisteBereinigen({ aufzuege: [{ id: "a1", sicherheitsdispositiv: "ja" }, { id: "a2", sicherheitsdispositiv: "vielleicht" }] }, 2);
+  assert.equal(neu.aufzuege[0].sicherheitsdispositiv, "ja");
+  assert.equal(neu.aufzuege[1].sicherheitsdispositiv, "");
+  const alt = checklisteBereinigen({ aufzuege: [{ id: "a1", brandfall: "ja" }] }, 1);
+  assert.equal(alt.aufzuege[0].sicherheitsdispositiv, "");
+  assert.equal(alt.aufzuege[0].brandfall, "ja");
 });

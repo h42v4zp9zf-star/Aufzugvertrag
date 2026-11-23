@@ -69,6 +69,7 @@ export default function AnlageErfassen() {
   const [halte, setHalte] = useState("");
   const [brandfall, setBrandfall] = useState<JaNeinUnbekannt>("unbekannt");
   const [attika, setAttika] = useState<"ja" | "nein" | null>(null);
+  const [sicherheit, setSicherheit] = useState<JaNeinUnbekannt>("unbekannt");
   const [baujahr, setBaujahr] = useState("");
   const [tueren, setTueren] = useState("");
   const [traglast, setTraglast] = useState("");
@@ -96,6 +97,7 @@ export default function AnlageErfassen() {
       haltestellen: Number(halte),
       brandfallsteuerung: brandfall,
       attika,
+      sicherheitsdispositiv: sicherheit,
       baujahr: opt(baujahr),
       kabinenabschlusstueren: opt(tueren),
       traglastKg: opt(traglast),
@@ -228,6 +230,14 @@ export default function AnlageErfassen() {
               <Choices options={ATTIKA} value={attika} onChange={setAttika} />
             </div>
             <p className="hint">Zurückversetztes oberstes Geschoss (Attikageschoss).</p>
+          </fieldset>
+
+          <fieldset className="group">
+            <legend>Sicherheitsdispositiv vorhanden *</legend>
+            <div className="grid3">
+              <Choices options={BRANDFALL} value={sicherheit} onChange={setSicherheit} />
+            </div>
+            <p className="hint">Zusätzliche Schutzeinrichtung im Schacht, wenn Schachtkopf oder Grube zu klein sind.</p>
           </fieldset>
 
           <fieldset className="group">

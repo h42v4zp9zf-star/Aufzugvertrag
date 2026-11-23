@@ -69,6 +69,7 @@ export function leseFormular(form: FormLike): FormErgebnis {
     alterUeber25JahreChf: zahl(form, "z_alter", GRENZEN.zuschlag, "Zuschlag Anlage älter als 25 Jahre", fehler),
     brandfallsteuerungChf: zahl(form, "z_brandfall", GRENZEN.zuschlag, "Zuschlag Brandfallsteuerung", fehler),
     proKabinenabschlusstuerChf: zahl(form, "z_tuer", GRENZEN.zuschlag, "Zuschlag pro Kabinenabschlusstür", fehler),
+    sicherheitsdispositivChf: zahl(form, "z_sicherheit", GRENZEN.zuschlag, "Zuschlag Sicherheitsdispositiv", fehler),
   };
 
   const daten: PreismodellDaten = {

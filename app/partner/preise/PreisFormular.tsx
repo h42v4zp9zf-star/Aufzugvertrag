@@ -7,7 +7,7 @@ import { preiseSpeichern, type FormStatus } from "../actions";
 import { Fehlerliste } from "../Formulare";
 
 type PaketWerte = { an: boolean; grundpreis: string; reaktion: string; pikett: Pikett };
-type Zuschlag = "z_halte" | "z_hydraulik" | "z_alter" | "z_brandfall" | "z_tuer";
+type Zuschlag = "z_halte" | "z_hydraulik" | "z_alter" | "z_brandfall" | "z_tuer" | "z_sicherheit";
 
 const ZUSCHLAEGE: { key: Zuschlag; label: string; feld: keyof PreismodellDaten["zuschlaege"] }[] = (
   [
@@ -16,6 +16,7 @@ const ZUSCHLAEGE: { key: Zuschlag; label: string; feld: keyof PreismodellDaten["
     ["z_alter", "alterUeber25JahreChf"],
     ["z_brandfall", "brandfallsteuerungChf"],
     ["z_tuer", "proKabinenabschlusstuerChf"],
+    ["z_sicherheit", "sicherheitsdispositivChf"],
   ] as const
 ).map(([key, feld]) => ({ key, feld, label: ZUSCHLAG_TEXT[feld] }));
 
@@ -56,7 +57,7 @@ export function PreisFormular({ gespeichert, veroeffentlicht }: { gespeichert: P
   });
   const [zuschlaege, setZuschlaege] = useState<Record<Zuschlag, string>>(() => {
     const init = {} as Record<Zuschlag, string>;
-    for (const z of ZUSCHLAEGE) init[z.key] = gespeichert ? String(gespeichert.zuschlaege[z.feld]) : "0";
+    for (const z of ZUSCHLAEGE) init[z.key] = String(gespeichert?.zuschlaege[z.feld] ?? 0);
     return init;
   });
   const [publik, setPublik] = useState(veroeffentlicht);
@@ -78,6 +79,7 @@ export function PreisFormular({ gespeichert, veroeffentlicht }: { gespeichert: P
       alterUeber25JahreChf: n(zuschlaege.z_alter) || 0,
       brandfallsteuerungChf: n(zuschlaege.z_brandfall) || 0,
       proKabinenabschlusstuerChf: n(zuschlaege.z_tuer) || 0,
+      sicherheitsdispositivChf: n(zuschlaege.z_sicherheit) || 0,
     },
     optionen: { fernueberwachung: null, verfuegbarkeit: null, ausserhalb: null },
     bewertung: 4,

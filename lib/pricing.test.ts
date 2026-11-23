@@ -17,6 +17,7 @@ const modell = (firma: string, grund: number, extra: Partial<Preismodell> = {}):
     alterUeber25JahreChf: 300,
     brandfallsteuerungChf: 50,
     proKabinenabschlusstuerChf: 40,
+    sicherheitsdispositivChf: 70,
   },
   optionen: { fernueberwachung: 250, verfuegbarkeit: null, ausserhalb: 300 },
   bewertung: 4,
@@ -46,6 +47,14 @@ test("Zuschläge werden zum Grundpreis addiert", () => {
   };
   // 1000 + 2*100 + 200 + 300 + 50 + 2*40
   assert.equal(preisProAufzug(m, m.pakete[0], a, []), 1830);
+});
+
+test("Sicherheitsdispositiv: Zuschlag nur bei „Ja“", () => {
+  const m = modell("A", 1000);
+  assert.equal(preisProAufzug(m, m.pakete[0], { ...anlage, sicherheitsdispositiv: "ja" }, []), 1070);
+  assert.equal(preisProAufzug(m, m.pakete[0], { ...anlage, sicherheitsdispositiv: "nein" }, []), 1000);
+  assert.equal(preisProAufzug(m, m.pakete[0], { ...anlage, sicherheitsdispositiv: "unbekannt" }, []), 1000);
+  assert.equal(preisProAufzug(m, m.pakete[0], anlage, []), 1000, "ältere Anfragen ohne Angabe");
 });
 
 test("Nicht angebotene Option schliesst das Angebot aus", () => {

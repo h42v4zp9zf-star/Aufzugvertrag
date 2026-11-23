@@ -183,6 +183,7 @@ function anlageZeilen(a: AufzugCheck): [string, string][] {
     ["Türen", tueren],
     ["Kabinenabschlusstüren", jaNein(a.kabinenabschlusstueren)],
     ["Brandfallsteuerung", jaNein(a.brandfall)],
+    ["Sicherheitsdispositiv", jaNein(a.sicherheitsdispositiv)],
     ["Notruf in der Kabine", notruf],
   ]);
 }

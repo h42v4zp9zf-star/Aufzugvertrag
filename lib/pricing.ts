@@ -22,6 +22,9 @@ export interface Anlage {
   brandfallsteuerung: JaNeinUnbekannt;
   /** Attika vorhanden (Wunsch Dario, 23.11.2026). Bei älteren Anfragen fehlt die Angabe. */
   attika?: "ja" | "nein";
+  /** Sicherheitsdispositiv vorhanden (Wunsch Dario, 23.11.2026): mehr Aufwand bei der Wartung.
+   *  Bei älteren Anfragen fehlt die Angabe. */
+  sicherheitsdispositiv?: JaNeinUnbekannt;
   baujahr?: number;
   kabinenabschlusstueren?: number;
   traglastKg?: number;
@@ -67,6 +70,8 @@ export interface Preismodell {
     alterUeber25JahreChf: number;
     brandfallsteuerungChf: number;
     proKabinenabschlusstuerChf: number;
+    /** Zuschlag bei Sicherheitsdispositiv (Wunsch Dario, 23.11.2026). Ältere Preismodelle: 0. */
+    sicherheitsdispositivChf: number;
   };
   optionen: Record<OptionKey, number | null>; // null = nicht angeboten
   bewertung: number; // 1 bis 5
@@ -79,6 +84,7 @@ export const ZUSCHLAG_TEXT: Record<keyof Preismodell["zuschlaege"], string> = {
   alterUeber25JahreChf: "Anlage älter als 25 Jahre",
   brandfallsteuerungChf: "Brandfallsteuerung vorhanden",
   proKabinenabschlusstuerChf: "Pro zusätzliche Kabinenabschlusstür",
+  sicherheitsdispositivChf: "Sicherheitsdispositiv vorhanden",
 };
 
 export interface Angebot {
@@ -115,6 +121,7 @@ export function preisProAufzug(
   if (anlage.antrieb === "hydraulik") preis += z.hydraulikChf;
   if (anlage.baujahr && AKTUELLES_JAHR - anlage.baujahr > 25) preis += z.alterUeber25JahreChf;
   if (anlage.brandfallsteuerung === "ja") preis += z.brandfallsteuerungChf;
+  if (anlage.sicherheitsdispositiv === "ja") preis += z.sicherheitsdispositivChf ?? 0;
   preis += (anlage.kabinenabschlusstueren ?? 0) * z.proKabinenabschlusstuerChf;
   for (const o of optionen) {
     const p = modell.optionen[o];
