@@ -2,6 +2,7 @@
 import type { Db } from "./db.ts";
 import { PIKETT_STANDARD, type Anlage, type Preismodell, type PreismodellDaten, type Stufe } from "./pricing.ts";
 import type { DokumentTyp } from "./dokumente.ts";
+import { FOTOS_MAX, type ChecklisteDaten } from "./checkliste.ts";
 
 export type Rolle = "firma" | "admin";
 export type KontoStatus = "pruefung" | "aktiv" | "gesperrt";
@@ -153,6 +154,8 @@ export interface Beratung {
   erstellt_am: Date;
   /** Hochgeladene Dokumente, ohne Inhalt (der wird erst beim Herunterladen geladen). */
   dokumente: DokumentInfo[];
+  /** Stand der Checkliste vor Ort: null = noch nicht angefangen. */
+  checkliste: "angefangen" | "abgeschlossen" | null;
 }
 
 export interface DokumentInfo {
@@ -225,7 +228,9 @@ export async function beratungAnlegen(
 const BERATUNG_SPALTEN = `id, name, email, telefon, adresse, anzahl_aufzuege, bemerkung,
   to_char(termin_datum, 'YYYY-MM-DD') AS termin_datum, termin_zeit, erstellt_am,
   COALESCE((SELECT json_agg(json_build_object('id', x.id, 'dateiname', x.dateiname, 'groesse', x.groesse) ORDER BY x.id)
-              FROM beratung_dokumente x WHERE x.beratung_id = beratungen.id), '[]'::json) AS dokumente`;
+              FROM beratung_dokumente x WHERE x.beratung_id = beratungen.id), '[]'::json) AS dokumente,
+  (SELECT CASE WHEN c.abgeschlossen_am IS NULL THEN 'angefangen' ELSE 'abgeschlossen' END
+     FROM beratung_checklisten c WHERE c.beratung_id = beratungen.id) AS checkliste`;
 
 /** Neueste Termine zuerst; Buchungen ohne Termin (ältere) am Schluss. */
 export async function beratungenListe(d: Db): Promise<Beratung[]> {
@@ -234,6 +239,100 @@ export async function beratungenListe(d: Db): Promise<Beratung[]> {
       ORDER BY termin_datum DESC NULLS LAST, termin_zeit DESC, erstellt_am DESC`,
   );
   return rows;
+}
+
+export async function beratungLaden(d: Db, id: number): Promise<Beratung | null> {
+  const { rows } = await d.query<Beratung>(`SELECT ${BERATUNG_SPALTEN} FROM beratungen WHERE id = $1`, [id]);
+  return rows[0] ?? null;
+}
+
+// ---- Checkliste vor Ort ----------------------------------------------------
+
+export interface ChecklisteStand {
+  daten: ChecklisteDaten;
+  abgeschlossen_am: Date | null;
+  geaendert_am: Date;
+}
+
+export async function checklisteLaden(d: Db, beratungId: number): Promise<ChecklisteStand | null> {
+  const { rows } = await d.query<ChecklisteStand>(
+    "SELECT daten, abgeschlossen_am, geaendert_am FROM beratung_checklisten WHERE beratung_id = $1",
+    [beratungId],
+  );
+  return rows[0] ?? null;
+}
+
+/**
+ * Speichert die (bereinigte) Checkliste. Fotos, die nicht mehr in der Liste stehen,
+ * werden in derselben Anweisung gelöscht.
+ */
+export async function checklisteSpeichern(d: Db, beratungId: number, daten: ChecklisteDaten): Promise<Date> {
+  const { rows } = await d.query<{ geaendert_am: Date }>(
+    `WITH s AS (
+       INSERT INTO beratung_checklisten (beratung_id, daten, abgeschlossen_am)
+       VALUES ($1, $2, CASE WHEN $3::boolean THEN now() END)
+       ON CONFLICT (beratung_id) DO UPDATE SET
+         daten = EXCLUDED.daten,
+         abgeschlossen_am = CASE WHEN $3::boolean THEN COALESCE(beratung_checklisten.abgeschlossen_am, now()) END,
+         geaendert_am = now()
+       RETURNING geaendert_am
+     ), weg AS (
+       DELETE FROM beratung_fotos WHERE beratung_id = $1 AND NOT (foto_id = ANY($4::text[]))
+     )
+     SELECT geaendert_am FROM s`,
+    [beratungId, JSON.stringify(daten), daten.abschluss.abgeschlossenAm !== "", daten.fotos.map((f) => f.id)],
+  );
+  return rows[0].geaendert_am;
+}
+
+/** Kennungen der Fotos, die schon auf dem Server liegen. */
+export async function fotoIds(d: Db, beratungId: number): Promise<string[]> {
+  const { rows } = await d.query<{ foto_id: string }>(
+    "SELECT foto_id FROM beratung_fotos WHERE beratung_id = $1 ORDER BY id",
+    [beratungId],
+  );
+  return rows.map((r) => r.foto_id);
+}
+
+/**
+ * Speichert ein Foto (gross und verkleinert). Kommt dasselbe Foto zweimal an (z. B. nach einem
+ * Unterbruch), bleibt das erste. „voll“, wenn schon {@link FOTOS_MAX} Fotos gespeichert sind.
+ */
+export async function fotoSpeichern(
+  d: Db,
+  beratungId: number,
+  fotoId: string,
+  inhalt: Buffer,
+  vorschau: Buffer,
+): Promise<"gespeichert" | "schon-da" | "voll"> {
+  const { rows } = await d.query<{ id: number }>(
+    `INSERT INTO beratung_fotos (beratung_id, foto_id, inhalt, vorschau)
+     SELECT $1, $2, $3, $4
+      WHERE (SELECT count(*) FROM beratung_fotos WHERE beratung_id = $1) < $5
+     ON CONFLICT (beratung_id, foto_id) DO NOTHING
+     RETURNING id`,
+    [beratungId, fotoId, inhalt, vorschau, FOTOS_MAX],
+  );
+  if (rows.length > 0) return "gespeichert";
+  const da = await d.query("SELECT 1 FROM beratung_fotos WHERE beratung_id = $1 AND foto_id = $2", [beratungId, fotoId]);
+  return da.rows.length > 0 ? "schon-da" : "voll";
+}
+
+export async function fotoLaden(d: Db, beratungId: number, fotoId: string, klein: boolean): Promise<Buffer | null> {
+  const { rows } = await d.query<{ bild: Buffer }>(
+    `SELECT ${klein ? "vorschau" : "inhalt"} AS bild FROM beratung_fotos WHERE beratung_id = $1 AND foto_id = $2`,
+    [beratungId, fotoId],
+  );
+  return rows[0]?.bild ?? null;
+}
+
+/** Alle verkleinerten Fotos einer Beratung, für den Bericht. */
+export async function vorschauBilder(d: Db, beratungId: number): Promise<Map<string, Buffer>> {
+  const { rows } = await d.query<{ foto_id: string; vorschau: Buffer }>(
+    "SELECT foto_id, vorschau FROM beratung_fotos WHERE beratung_id = $1",
+    [beratungId],
+  );
+  return new Map(rows.map((r) => [r.foto_id, r.vorschau]));
 }
 
 /** Ein Dokument mit Inhalt, zum Herunterladen in der Verwaltung. */

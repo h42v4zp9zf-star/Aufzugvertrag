@@ -8,9 +8,9 @@ import { Header } from "@/components/Header";
 import { toParams } from "@/lib/anlageParams";
 import { HerstellerWahl } from "./HerstellerWahl";
 import type { Antrieb, JaNeinUnbekannt } from "@/lib/pricing";
+import { AUFZUGSARTEN, GEBAEUDETYPEN } from "@/lib/stammdaten";
 
-const GEBAEUDETYPEN = ["Mehrfamilienhaus", "Büro", "Hotel", "Spital / Pflegeheim", "Industrie", "Gewerbe", "Mischnutzung", "Andere"];
-const ARTEN = ["Personenaufzug", "Lastenaufzug", "Personen- und Lastenaufzug", "Plattformlift"];
+const ARTEN = AUFZUGSARTEN;
 const ANTRIEBE: { value: Antrieb; label: string }[] = [
   { value: "seil", label: "Seil" },
   { value: "hydraulik", label: "Hydraulik" },

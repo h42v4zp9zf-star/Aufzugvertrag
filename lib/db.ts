@@ -73,6 +73,23 @@ CREATE TABLE IF NOT EXISTS beratung_dokumente (
   erstellt_am  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS beratung_dokumente_beratung ON beratung_dokumente (beratung_id);
+
+-- Checkliste vor Ort (Wunsch Dario, 23.11.2026): alle Angaben als JSON, Fotos separat.
+CREATE TABLE IF NOT EXISTS beratung_checklisten (
+  beratung_id       INTEGER PRIMARY KEY REFERENCES beratungen(id) ON DELETE CASCADE,
+  daten             JSONB NOT NULL,
+  abgeschlossen_am  TIMESTAMPTZ,
+  geaendert_am      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS beratung_fotos (
+  id           SERIAL PRIMARY KEY,
+  beratung_id  INTEGER NOT NULL REFERENCES beratungen(id) ON DELETE CASCADE,
+  foto_id      TEXT NOT NULL,
+  inhalt       BYTEA NOT NULL,
+  vorschau     BYTEA NOT NULL,
+  erstellt_am  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (beratung_id, foto_id)
+);
 `;
 
 let pool: pg.Pool | null = null;

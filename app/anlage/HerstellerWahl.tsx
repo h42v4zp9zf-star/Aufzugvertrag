@@ -10,7 +10,15 @@ import { HERSTELLER_HAUPT, herstellerSuchliste, suchtext } from "@/lib/stammdate
 
 const ANDERE = "__andere";
 
-export function HerstellerWahl({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+export function HerstellerWahl({
+  value,
+  onChange,
+  label = "Hersteller *",
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  label?: string;
+}) {
   const [offen, setOffen] = useState(false);
   const [suche, setSuche] = useState("");
   const [eigener, setEigener] = useState(false);
@@ -48,7 +56,7 @@ export function HerstellerWahl({ value, onChange }: { value: string; onChange: (
   return (
     <>
       <label className="field">
-        Hersteller *
+        {label}
         <select
           value={direkt ? value : ANDERE}
           onChange={(e) => {
