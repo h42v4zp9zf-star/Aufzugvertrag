@@ -5,7 +5,7 @@ import { AnfragenTabelle } from "@/components/AnfragenTabelle";
 import { PortalHeader } from "@/components/PortalHeader";
 import { db, dbKonfiguriert } from "@/lib/db";
 import { groesseText } from "@/lib/dokumente";
-import { chf, PIKETT_TEXT, STUFEN, VERMITTLUNGSGEBUEHR_CHF, WARTUNGEN_PRO_STUFE, ZUSCHLAG_TEXT, type Antrieb, type Preismodell } from "@/lib/pricing";
+import { chf, dauerText, fristText, PIKETT_TEXT, STUFEN, VERMITTLUNGSGEBUEHR_CHF, WARTUNGEN_PRO_STUFE, ZUSCHLAG_TEXT, type Antrieb, type Preismodell } from "@/lib/pricing";
 import { anfragenListe, firmaLaden, preismodellLaden, unterlagenListe } from "@/lib/repo";
 import { kontoErforderlich } from "@/lib/sitzung";
 import { PLZ_KREISE, STUFEN_NAMEN } from "@/lib/stammdaten";
@@ -128,6 +128,8 @@ export default async function FirmaPage({ params }: { params: Promise<{ id: stri
                       <th className="right">Grundpreis</th>
                       <th>Reaktionszeit</th>
                       <th>Pikett-Deckung</th>
+                      <th>Vertragsdauer</th>
+                      <th>Kündigungsfrist</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -142,9 +144,11 @@ export default async function FirmaPage({ params }: { params: Promise<{ id: stri
                               <td className="right nowrap">{chf(p.grundpreisChf)}</td>
                               <td className="nowrap">{p.reaktionszeitStd} Std.</td>
                               <td>{PIKETT_TEXT[p.pikett]}</td>
+                              <td className="nowrap">{p.vertragsdauerJahre ? dauerText(p.vertragsdauerJahre) : <span className="muted">nicht angegeben</span>}</td>
+                              <td className="nowrap">{p.kuendigungsfristMonate ? fristText(p.kuendigungsfristMonate) : <span className="muted">nicht angegeben</span>}</td>
                             </>
                           ) : (
-                            <td colSpan={4} className="muted">
+                            <td colSpan={6} className="muted">
                               Nicht angeboten
                             </td>
                           )}

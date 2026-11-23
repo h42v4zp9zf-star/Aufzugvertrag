@@ -6,6 +6,8 @@ import { useMemo, useState, useTransition, type FormEvent } from "react";
 import { fromParams } from "@/lib/anlageParams";
 import {
   chf,
+  dauerText,
+  fristText,
   STUFEN,
   vergleiche,
   PIKETT_STANDARD,
@@ -95,7 +97,7 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
       <div className="offers__head">
         <h1>Ihre Angebote</h1>
         <p className="lead">
-          {anlage.anzahlAufzuege} × {anlage.aufzugsart} · {anlage.haltestellen} Haltestellen{anlage.attika ? ` · ${anlage.attika === "ja" ? "mit" : "ohne"} Attika` : ""} · {herstellerText} · PLZ {anlage.plz}
+          {anlage.anzahlAufzuege} × {anlage.aufzugsart} · {anlage.haltestellen} Haltestellen{anlage.attika ? ` · ${anlage.attika === "ja" ? "mit" : "ohne"} Attika` : ""}{anlage.sicherheitsdispositiv === "ja" ? " · mit Sicherheitsdispositiv" : ""} · {herstellerText} · PLZ {anlage.plz}
         </p>
         <Link href="/anlage" className="link-muted">
           Angaben ändern
@@ -138,6 +140,14 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
                   <div>
                     <strong>{a.reaktionszeitStd} Std.</strong>Reaktionszeit Störung
                   </div>
+                  <div>
+                    <strong>{a.vertragsdauerJahre ? dauerText(a.vertragsdauerJahre) : "Nicht angegeben"}</strong>Vertragsdauer
+                  </div>
+                  {a.vertragsdauerJahre && a.kuendigungsfristMonate && (
+                    <div>
+                      <strong>{fristText(a.kuendigungsfristMonate)}</strong>Kündigungsfrist
+                    </div>
+                  )}
                 </div>
               )}
               <button
@@ -170,6 +180,8 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
                   <th>Preis pro Jahr</th>
                   <th>Reaktionszeit</th>
                   <th>Pikett</th>
+                  <th>Vertragsdauer</th>
+                  <th>Kündigungsfrist</th>
                   <th className="right">
                     <span className="sr-only">Aktion</span>
                   </th>
@@ -182,6 +194,8 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
                     <td>{chf(a.preisProJahrChf)}</td>
                     <td>{a.reaktionszeitStd} Std.</td>
                     <td>{PIKETT_KURZ[a.pikett]}</td>
+                    <td>{a.vertragsdauerJahre ? dauerText(a.vertragsdauerJahre) : "nicht angegeben"}</td>
+                    <td>{a.vertragsdauerJahre && a.kuendigungsfristMonate ? fristText(a.kuendigungsfristMonate) : "–"}</td>
                     <td className="right">
                       <button type="button" className="linkbtn" onClick={() => {
                           setGewaehlt((g) => ({ ...g, [stufe]: a.firma }));

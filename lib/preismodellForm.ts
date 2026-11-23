@@ -1,5 +1,5 @@
 // Liest und prüft das Preisformular einer Liftfirma.
-import { PIKETT, STUFEN, type Antrieb, type Paket, type Pikett, type PreismodellDaten } from "./pricing.ts";
+import { KUENDIGUNGSFRIST_MONATE, PIKETT, STUFEN, VERTRAGSDAUER_JAHRE, type Antrieb, type Paket, type Pikett, type PreismodellDaten } from "./pricing.ts";
 
 export interface FormLike {
   get(name: string): FormDataEntryValue | null;
@@ -54,11 +54,17 @@ export function leseFormular(form: FormLike): FormErgebnis {
     const name = stufe[0].toUpperCase() + stufe.slice(1);
     const pikett = String(form.get(`${stufe}_pikett`) ?? "") as Pikett;
     if (!PIKETT.includes(pikett)) fehler.push(`${name}: bitte die Pikett-Deckung wählen.`);
+    const dauer = Number(form.get(`${stufe}_dauer`) ?? "");
+    if (!VERTRAGSDAUER_JAHRE.includes(dauer)) fehler.push(`${name}: bitte die Vertragsdauer wählen.`);
+    const frist = Number(form.get(`${stufe}_frist`) ?? "");
+    if (!KUENDIGUNGSFRIST_MONATE.includes(frist)) fehler.push(`${name}: bitte die Kündigungsfrist wählen.`);
     pakete.push({
       stufe,
       grundpreisChf: Math.round(zahl(form, `${stufe}_grundpreis`, GRENZEN.grundpreis, `${name}: Grundpreis`, fehler)),
       reaktionszeitStd: zahl(form, `${stufe}_reaktion`, GRENZEN.reaktion, `${name}: Reaktionszeit`, fehler),
       pikett,
+      vertragsdauerJahre: dauer,
+      kuendigungsfristMonate: frist,
     });
   }
   if (pakete.length === 0) fehler.push("Pakete: mindestens ein Paket anbieten.");
@@ -69,6 +75,7 @@ export function leseFormular(form: FormLike): FormErgebnis {
     alterUeber25JahreChf: zahl(form, "z_alter", GRENZEN.zuschlag, "Zuschlag Anlage älter als 25 Jahre", fehler),
     brandfallsteuerungChf: zahl(form, "z_brandfall", GRENZEN.zuschlag, "Zuschlag Brandfallsteuerung", fehler),
     proKabinenabschlusstuerChf: zahl(form, "z_tuer", GRENZEN.zuschlag, "Zuschlag pro Kabinenabschlusstür", fehler),
+    sicherheitsdispositivChf: zahl(form, "z_sicherheit", GRENZEN.zuschlag, "Zuschlag Sicherheitsdispositiv", fehler),
   };
 
   const daten: PreismodellDaten = {

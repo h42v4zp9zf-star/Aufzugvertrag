@@ -112,8 +112,13 @@ export async function preismodellSpeichern(d: Db, kontoId: number, daten: Preism
 }
 
 // Pakete, die vor der Pikett-Angabe gespeichert wurden, bekommen die bisherige Deckung.
+// Preismodelle von vor dem Zuschlag Sicherheitsdispositiv bekommen dort 0 Franken.
 function mitPikett(daten: PreismodellDaten): PreismodellDaten {
-  return { ...daten, pakete: daten.pakete.map((p) => ({ ...p, pikett: p.pikett ?? PIKETT_STANDARD[p.stufe] })) };
+  return {
+    ...daten,
+    pakete: daten.pakete.map((p) => ({ ...p, pikett: p.pikett ?? PIKETT_STANDARD[p.stufe] })),
+    zuschlaege: { ...daten.zuschlaege, sicherheitsdispositivChf: daten.zuschlaege.sicherheitsdispositivChf ?? 0 },
+  };
 }
 
 export async function preismodellLaden(d: Db, kontoId: number): Promise<{ daten: PreismodellDaten; veroeffentlicht: boolean; geaendert_am: Date } | null> {

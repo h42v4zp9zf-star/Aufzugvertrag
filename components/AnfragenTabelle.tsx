@@ -50,6 +50,7 @@ export function AnfragenTabelle({ anfragen, mitFirma = false }: { anfragen: Anfr
                 <span className="muted">
                   {a.anlage.hersteller === "unbekannt" ? "Hersteller unbekannt" : a.anlage.hersteller} · PLZ {a.anlage.plz}
                   {a.anlage.attika && ` · ${a.anlage.attika === "ja" ? "mit" : "ohne"} Attika`}
+                  {a.anlage.sicherheitsdispositiv === "ja" && " · mit Sicherheitsdispositiv"}
                 </span>
               </td>
               <td>{STUFEN_NAMEN[a.stufe]}</td>

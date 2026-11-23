@@ -75,6 +75,8 @@ export interface AufzugCheck {
   tueren: "" | "schiebe" | "dreh";
   kabinenabschlusstueren: JaNein;
   brandfall: "" | JaNeinUnbekannt;
+  /** Sicherheitsdispositiv (Wunsch Dario 23.11.2026: „sehr wichtiger Punkt“). */
+  sicherheitsdispositiv: "" | JaNeinUnbekannt;
   notruf: JaNein;
   notrufVerbunden: string;
   zustand: Record<ZustandPunkt, Bewertung>;
@@ -148,6 +150,7 @@ export function leererAufzug(id: string, nummer: number): AufzugCheck {
     tueren: "",
     kabinenabschlusstueren: "",
     brandfall: "",
+    sicherheitsdispositiv: "",
     notruf: "",
     notrufVerbunden: "",
     zustand: ZUSTAND_LEER(),
@@ -214,6 +217,7 @@ const AUSWAHL: Record<string, readonly string[]> = {
   "aufzuege.tueren": ["", "schiebe", "dreh"],
   "aufzuege.kabinenabschlusstueren": ["", "ja", "nein"],
   "aufzuege.brandfall": ["", "ja", "nein", "unbekannt"],
+  "aufzuege.sicherheitsdispositiv": ["", "ja", "nein", "unbekannt"],
   "aufzuege.notruf": ["", "ja", "nein"],
   "aufzuege.notrufGetestet": ["", "ja", "nein"],
   "aufzuege.oelverlust": ["", "ja", "nein"],
@@ -356,6 +360,7 @@ export function anlageAusCheckliste(d: ChecklisteDaten, adresse: string): Anlage
     haltestellen: halte,
     brandfallsteuerung: a.brandfall || "unbekannt",
     attika: d.liegenschaft.attika || undefined,
+    sicherheitsdispositiv: a.sicherheitsdispositiv || "unbekannt",
     baujahr: baujahr && baujahr > 1900 && baujahr < 2100 ? baujahr : undefined,
     traglastKg: ganzzahl(a.traglastKg),
     geschwindigkeitMs: zahl(a.geschwindigkeit),

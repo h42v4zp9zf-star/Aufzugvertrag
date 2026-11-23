@@ -20,6 +20,15 @@ test("Attika geht über den Link zum Vergleich nicht verloren", () => {
   assert.equal(fromParams(toParams({ ...ANLAGE, attika: "nein" }))?.attika, "nein");
 });
 
+test("Sicherheitsdispositiv geht über den Link nicht verloren", () => {
+  assert.equal(fromParams(toParams({ ...ANLAGE, sicherheitsdispositiv: "ja" }))?.sicherheitsdispositiv, "ja");
+  assert.equal(fromParams(toParams({ ...ANLAGE, sicherheitsdispositiv: "unbekannt" }))?.sicherheitsdispositiv, "unbekannt");
+  const alt = toParams(ANLAGE);
+  assert.equal(fromParams(alt)?.sicherheitsdispositiv, undefined, "alte Links ohne Angabe");
+  alt.set("sicherheit", "vielleicht");
+  assert.equal(fromParams(alt)?.sicherheitsdispositiv, "unbekannt");
+});
+
 test("Alte Links ohne Attika-Angabe funktionieren weiter", () => {
   const p = toParams({ ...ANLAGE, attika: undefined });
   assert.equal(p.has("attika"), false);

@@ -64,8 +64,8 @@ const DATEN: PreismodellDaten = {
   plzPraefixe: ["8"],
   hersteller: "alle",
   antriebe: ["seil"],
-  pakete: [{ stufe: "basis", grundpreisChf: 1000, reaktionszeitStd: 24, pikett: "tag" }],
-  zuschlaege: { proHaltestelleUeber4Chf: 0, hydraulikChf: 0, alterUeber25JahreChf: 0, brandfallsteuerungChf: 0, proKabinenabschlusstuerChf: 0 },
+  pakete: [{ stufe: "basis", grundpreisChf: 1000, reaktionszeitStd: 24, pikett: "tag", vertragsdauerJahre: 3, kuendigungsfristMonate: 6 }],
+  zuschlaege: { proHaltestelleUeber4Chf: 0, hydraulikChf: 0, alterUeber25JahreChf: 0, brandfallsteuerungChf: 0, proKabinenabschlusstuerChf: 0, sicherheitsdispositivChf: 0 },
   optionen: { fernueberwachung: null, verfuegbarkeit: null, ausserhalb: null },
 };
 
@@ -99,6 +99,8 @@ test("Konto, Sitzung, Freischaltung, Preismodell und Anfrage", { skip }, async (
   assert.equal(aktiv[0].firma, "Test AG");
   assert.equal(aktiv[0].firmaId, k.id);
   assert.equal(aktiv[0].pakete[0].pikett, "tag");
+  assert.equal(aktiv[0].pakete[0].vertragsdauerJahre, 3);
+  assert.equal(aktiv[0].pakete[0].kuendigungsfristMonate, 6);
 
   await preismodellSpeichern(d, k.id, DATEN, false);
   assert.equal((await aktivePreismodelle(d)).length, 0, "nicht veröffentlicht → nicht sichtbar");
@@ -149,8 +151,10 @@ test("Beratung vor Ort wird gespeichert", { skip }, async () => {
 test("Früher gespeicherte Pakete ohne Pikett-Angabe bekommen die bisherige Deckung", { skip }, async () => {
   const k = await kontoAnlegen(d, { firma: "Alt AG", uid: "CHE-111.111.111", email: "alt@example.ch", passwortHash: "x" });
   await kontoStatusSetzen(d, k.id, "aktiv");
+  const { sicherheitsdispositivChf: _ohne, ...alteZuschlaege } = { ...DATEN.zuschlaege, proHaltestelleUeber4Chf: 90 };
   const alt = {
     ...DATEN,
+    zuschlaege: alteZuschlaege,
     pakete: [
       { stufe: "basis", grundpreisChf: 1000, reaktionszeitStd: 24 },
       { stufe: "standard", grundpreisChf: 2000, reaktionszeitStd: 4 },
@@ -160,6 +164,12 @@ test("Früher gespeicherte Pakete ohne Pikett-Angabe bekommen die bisherige Deck
   const m = (await aktivePreismodelle(d)).find((x) => x.firmaId === k.id)!;
   assert.deepEqual(m.pakete.map((p) => p.pikett), ["keine", "24h"]);
   assert.deepEqual((await preismodellLaden(d, k.id))?.daten.pakete.map((p) => p.pikett), ["keine", "24h"]);
+  // Ohne Zuschlag Sicherheitsdispositiv (vor dem 23.11.2026 gespeichert): 0 Franken.
+  assert.equal(m.zuschlaege.sicherheitsdispositivChf, 0);
+  assert.equal((await preismodellLaden(d, k.id))?.daten.zuschlaege.sicherheitsdispositivChf, 0);
+  assert.equal(m.zuschlaege.proHaltestelleUeber4Chf, 90);
+  // Ohne Vertragsdauer (vor dem 23.11.2026 gespeichert): bleibt leer, der Vergleich zeigt «nicht angegeben».
+  assert.deepEqual(m.pakete.map((p) => p.vertragsdauerJahre), [undefined, undefined]);
 });
 
 test("Fester Termin: wird gespeichert, ist danach belegt und kann nicht doppelt gebucht werden", { skip }, async () => {

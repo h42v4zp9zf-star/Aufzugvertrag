@@ -17,11 +17,14 @@ const GUELTIG = {
   standard_grundpreis: "2'150",
   standard_reaktion: "4",
   standard_pikett: "tag",
+  standard_dauer: "3",
+  standard_frist: "6",
   z_halte: "90",
   z_hydraulik: "150",
   z_alter: "300",
   z_brandfall: "120",
   z_tuer: "80",
+  z_sicherheit: "60",
   veroeffentlicht: "on",
 };
 
@@ -50,13 +53,16 @@ test("Gültiges Preisformular ergibt ein Preismodell", () => {
   assert.deepEqual(r.daten?.plzPraefixe, ["8", "9"]);
   assert.equal(r.daten?.hersteller, "alle");
   assert.deepEqual(r.daten?.antriebe, ["seil"]);
-  assert.deepEqual(r.daten?.pakete, [{ stufe: "standard", grundpreisChf: 2150, reaktionszeitStd: 4, pikett: "tag" }]);
+  assert.deepEqual(r.daten?.pakete, [
+    { stufe: "standard", grundpreisChf: 2150, reaktionszeitStd: 4, pikett: "tag", vertragsdauerJahre: 3, kuendigungsfristMonate: 6 },
+  ]);
   assert.equal(r.daten?.zuschlaege.proHaltestelleUeber4Chf, 90);
+  assert.equal(r.daten?.zuschlaege.sicherheitsdispositivChf, 60);
   assert.equal(r.daten?.optionen.fernueberwachung, null);
 });
 
 test("Fehlende Pflichtangaben werden gemeldet", () => {
-  const r = leseFormular(formular({ z_halte: "0", z_hydraulik: "0", z_alter: "0", z_brandfall: "0", z_tuer: "0" }));
+  const r = leseFormular(formular({ z_halte: "0", z_hydraulik: "0", z_alter: "0", z_brandfall: "0", z_tuer: "0", z_sicherheit: "0" }));
   assert.equal(r.daten, null);
   assert.equal(r.fehler.length, 4); // Einzugsgebiet, Hersteller, Antriebe, Pakete
 });
@@ -71,6 +77,23 @@ test("Unbekannte Pikett-Deckung wird gemeldet", () => {
   const r = leseFormular(formular({ ...GUELTIG, standard_pikett: "nachts" }));
   assert.equal(r.daten, null);
   assert.deepEqual(r.fehler, ["Standard: bitte die Pikett-Deckung wählen."]);
+});
+
+test("Vertragsdauer und Kündigungsfrist müssen gewählt werden", () => {
+  const { standard_dauer, standard_frist, ...ohne } = GUELTIG;
+  void standard_dauer;
+  void standard_frist;
+  const r = leseFormular(formular(ohne));
+  assert.equal(r.daten, null);
+  assert.deepEqual(r.fehler, ["Standard: bitte die Vertragsdauer wählen.", "Standard: bitte die Kündigungsfrist wählen."]);
+});
+
+test("Vertragsdauer nur 1 bis 5 Jahre, Kündigungsfrist nur aus der Auswahl", () => {
+  for (const dauer of ["0", "6", "2.5", "abc"]) {
+    assert.deepEqual(leseFormular(formular({ ...GUELTIG, standard_dauer: dauer })).fehler, ["Standard: bitte die Vertragsdauer wählen."], dauer);
+  }
+  assert.deepEqual(leseFormular(formular({ ...GUELTIG, standard_frist: "2" })).fehler, ["Standard: bitte die Kündigungsfrist wählen."]);
+  for (const dauer of ["1", "5"]) assert.deepEqual(leseFormular(formular({ ...GUELTIG, standard_dauer: dauer })).fehler, []);
 });
 
 test("Ausgewählte Hersteller statt alle", () => {
