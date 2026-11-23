@@ -61,6 +61,18 @@ ALTER TABLE beratungen ADD COLUMN IF NOT EXISTS termin_zeit TEXT;
 -- Pro Zeitfenster nur eine Buchung, auch wenn zwei Kunden gleichzeitig klicken.
 CREATE UNIQUE INDEX IF NOT EXISTS beratungen_termin_eindeutig
   ON beratungen (termin_datum, termin_zeit) WHERE termin_datum IS NOT NULL;
+
+-- Freiwillige Dokumente zur Beratung (seit 23.11.2026), z. B. bisheriger Wartungsvertrag.
+CREATE TABLE IF NOT EXISTS beratung_dokumente (
+  id           SERIAL PRIMARY KEY,
+  beratung_id  INTEGER NOT NULL REFERENCES beratungen(id) ON DELETE CASCADE,
+  dateiname    TEXT NOT NULL,
+  typ          TEXT NOT NULL,
+  groesse      INTEGER NOT NULL,
+  inhalt       BYTEA NOT NULL,
+  erstellt_am  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS beratung_dokumente_beratung ON beratung_dokumente (beratung_id);
 `;
 
 let pool: pg.Pool | null = null;

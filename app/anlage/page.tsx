@@ -148,7 +148,9 @@ export default function AnlageErfassen() {
         <form className="config__form" onSubmit={absenden} noValidate>
           <div>
             <h1>Ihre Anlage</h1>
-            <p className="hint">Felder mit Stern sind Pflicht. Unbekanntes lassen Sie offen.</p>
+            <p className="hint">
+              Felder mit Stern sind Pflicht. Unbekanntes lassen Sie offen. <Link href="/anlagedaten">Wo finde ich diese Angaben?</Link>
+            </p>
           </div>
 
           <fieldset className="group">

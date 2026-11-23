@@ -7,6 +7,7 @@ import { chf, VERMITTLUNGSGEBUEHR_CHF } from "@/lib/pricing";
 import { anfragenListe, beratungenListe, kontenListe, type KontoStatus } from "@/lib/repo";
 import { kontoErforderlich } from "@/lib/sitzung";
 import { BERATUNG_PREIS_CHF } from "@/lib/config";
+import { groesseText } from "@/lib/dokumente";
 import { terminText } from "@/lib/termine";
 
 export const dynamic = "force-dynamic";
@@ -105,6 +106,7 @@ export default async function AdminPage() {
                     <th>Liegenschaft</th>
                     <th>Aufzüge</th>
                     <th>Bemerkung</th>
+                    <th>Dokumente</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -127,6 +129,18 @@ export default async function AdminPage() {
                       <td>{b.adresse}</td>
                       <td>{b.anzahl_aufzuege}</td>
                       <td style={{ whiteSpace: "pre-line" }}>{b.bemerkung || "–"}</td>
+                      <td>
+                        {b.dokumente.length === 0
+                          ? "–"
+                          : b.dokumente.map((x) => (
+                              <div key={x.id} className="dok-link">
+                                <a href={`/admin/dokument/${x.id}`} download>
+                                  {x.dateiname}
+                                </a>{" "}
+                                <span className="muted">{groesseText(x.groesse)}</span>
+                              </div>
+                            ))}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

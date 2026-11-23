@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { BERATUNG_PREIS_CHF } from "@/lib/config";
+import { DOKUMENT_TYPEN, DOKUMENTE_MAX_ANZAHL, DOKUMENTE_MAX_BYTES, groesseText } from "@/lib/dokumente";
 import { endzeit, istArbeitstag, kalenderTage, startzeiten, terminSchluessel, terminText, wochentag } from "@/lib/termine";
 import { beratungSenden } from "./actions";
 
@@ -29,6 +30,38 @@ function wochen(tage: string[]): (string | null)[][] {
   return reihen;
 }
 
+type Datei = { id: number; name: string; inhalt: Blob };
+let naechsteId = 1;
+
+const ERLAUBTE_ENDUNG = /\.(pdf|jpe?g|png)$/i;
+/** Fotos über 1 MB werden vor dem Hochladen verkleinert (längste Seite 2000 Pixel). */
+const FOTO_GRENZE = 1024 * 1024;
+const FOTO_PIXEL = 2000;
+
+/** Grosse Fotos (z. B. vom Handy) verkleinern, damit sie in die 4 MB passen. */
+async function vorbereiten(f: File): Promise<Datei> {
+  const original: Datei = { id: naechsteId++, name: f.name, inhalt: f };
+  if (!/^image\/(jpeg|png)$/.test(f.type) || f.size <= FOTO_GRENZE) return original;
+  try {
+    const bild = await createImageBitmap(f);
+    const faktor = Math.min(1, FOTO_PIXEL / Math.max(bild.width, bild.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bild.width * faktor);
+    canvas.height = Math.round(bild.height * faktor);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return original;
+    ctx.fillStyle = "#fff"; // transparente PNG-Flächen weiss statt schwarz
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bild, 0, 0, canvas.width, canvas.height);
+    bild.close();
+    const klein = await new Promise<Blob | null>((ok) => canvas.toBlob(ok, "image/jpeg", 0.85));
+    if (!klein || klein.size >= f.size) return original;
+    return { ...original, name: f.name.replace(/\.(jpe?g|png)$/i, "") + ".jpg", inhalt: klein };
+  } catch {
+    return original;
+  }
+}
+
 export function BeratungForm({ heute, belegt }: { heute: string; belegt: string[] }) {
   const router = useRouter();
   const [fehler, setFehler] = useState<string | null>(null);
@@ -36,12 +69,43 @@ export function BeratungForm({ heute, belegt }: { heute: string; belegt: string[
   const [laeuft, starten] = useTransition();
   const [datum, setDatum] = useState<string | null>(null);
   const [zeit, setZeit] = useState<string | null>(null);
+  const [dateien, setDateien] = useState<Datei[]>([]);
+  const [dateiHinweis, setDateiHinweis] = useState<string | null>(null);
+  const [bereitet, setBereitet] = useState(false);
 
   const zeiten = startzeiten();
   const besetzt = useMemo(() => new Set(belegt), [belegt]);
   const reihen = useMemo(() => wochen(kalenderTage(heute)), [heute]);
   const frei = (d: string, z: string) => !besetzt.has(terminSchluessel(d, z));
   const buchbar = (d: string) => istArbeitstag(d) && zeiten.some((z) => frei(d, z));
+  const summe = dateien.reduce((s, d) => s + d.inhalt.size, 0);
+  const voll = dateien.length >= DOKUMENTE_MAX_ANZAHL;
+
+  async function hinzufuegen(auswahl: File[]) {
+    setDateiHinweis(null);
+    setBereitet(true);
+    const liste = [...dateien];
+    const probleme: string[] = [];
+    for (const f of auswahl) {
+      if (liste.length >= DOKUMENTE_MAX_ANZAHL) {
+        probleme.push(`Höchstens ${DOKUMENTE_MAX_ANZAHL} Dokumente möglich.`);
+        break;
+      }
+      if (!DOKUMENT_TYPEN.includes(f.type as (typeof DOKUMENT_TYPEN)[number]) && !ERLAUBTE_ENDUNG.test(f.name)) {
+        probleme.push(`„${f.name}“: bitte nur PDF, JPG oder PNG.`);
+        continue;
+      }
+      const d = await vorbereiten(f);
+      if (liste.reduce((s, x) => s + x.inhalt.size, 0) + d.inhalt.size > DOKUMENTE_MAX_BYTES) {
+        probleme.push(`„${f.name}“ ist zu gross: zusammen sind höchstens 4 MB möglich.`);
+        continue;
+      }
+      liste.push(d);
+    }
+    setDateien(liste);
+    setDateiHinweis(probleme.length ? probleme.join(" ") : null);
+    setBereitet(false);
+  }
 
   if (gebucht) {
     return (
@@ -50,6 +114,9 @@ export function BeratungForm({ heute, belegt }: { heute: string; belegt: string[
         <p>
           <strong>{gebucht}</strong>
         </p>
+        {dateien.length > 0 && (
+          <p className="muted">{dateien.length === 1 ? "Ihr Dokument haben wir erhalten." : `Ihre ${dateien.length} Dokumente haben wir erhalten.`}</p>
+        )}
         <p className="muted">
           Unsere Fachperson kommt zur angegebenen Adresse. Falls etwas dazwischenkommt, melden wir uns telefonisch bei Ihnen. Kosten:
           CHF {BERATUNG_PREIS_CHF} (Fixpreis), per Rechnung.
@@ -72,9 +139,16 @@ export function BeratungForm({ heute, belegt }: { heute: string; belegt: string[
           return;
         }
         const daten = new FormData(e.currentTarget);
+        for (const d of dateien) daten.append("dokumente", d.inhalt, d.name);
         setFehler(null);
         starten(async () => {
-          const r = await beratungSenden(daten);
+          let r;
+          try {
+            r = await beratungSenden(daten);
+          } catch {
+            setFehler("Die Buchung konnte nicht gesendet werden. Bitte versuchen Sie es noch einmal, allenfalls mit kleineren Dokumenten.");
+            return;
+          }
           if (r.ok) {
             setGebucht(terminText(datum, zeit));
             return;
@@ -182,6 +256,61 @@ export function BeratungForm({ heute, belegt }: { heute: string; belegt: string[
         </label>
       </fieldset>
 
+      <fieldset className="group">
+        <legend>Dokumente (freiwillig)</legend>
+        <p className="hint">
+          Zum Beispiel bisheriger Wartungsvertrag oder Offerte. PDF, JPG oder PNG, bis {DOKUMENTE_MAX_ANZAHL} Dateien, zusammen höchstens 4 MB.
+        </p>
+        {dateien.length > 0 && (
+          <ul className="dateien">
+            {dateien.map((d) => (
+              <li key={d.id}>
+                <span className="dateien__name">{d.name}</span>
+                <span className="dateien__groesse">{groesseText(d.inhalt.size)}</span>
+                <button
+                  type="button"
+                  className="linkbtn"
+                  aria-label={`${d.name} entfernen`}
+                  onClick={() => {
+                    setDateien(dateien.filter((x) => x.id !== d.id));
+                    setDateiHinweis(null);
+                  }}
+                >
+                  Entfernen
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {!voll && (
+          <label className={`btn btn--outline datei-knopf${bereitet ? " datei-knopf--aus" : ""}`}>
+            {bereitet ? "Wird vorbereitet …" : dateien.length ? "Weiteres Dokument hinzufügen" : "Dokument auswählen"}
+            <input
+              type="file"
+              className="sr-only"
+              accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+              multiple
+              disabled={bereitet}
+              onChange={(e) => {
+                const auswahl = Array.from(e.currentTarget.files ?? []);
+                e.currentTarget.value = ""; // dieselbe Datei kann erneut gewählt werden
+                if (auswahl.length) void hinzufuegen(auswahl);
+              }}
+            />
+          </label>
+        )}
+        {dateien.length > 0 && (
+          <p className="hint">
+            {dateien.length} von {DOKUMENTE_MAX_ANZAHL} Dateien, {groesseText(summe)} von 4 MB
+          </p>
+        )}
+        {dateiHinweis && (
+          <p className="error" role="alert">
+            {dateiHinweis}
+          </p>
+        )}
+      </fieldset>
+
       <label className="check">
         <input type="checkbox" name="pauschale" required />
         Ich nehme zur Kenntnis: Die Beratung vor Ort kostet CHF {BERATUNG_PREIS_CHF} (Fixpreis, ohne Zusatzkosten), zahlbar per Rechnung.
@@ -191,7 +320,7 @@ export function BeratungForm({ heute, belegt }: { heute: string; belegt: string[
           {fehler}
         </p>
       )}
-      <button type="submit" className="btn btn--dark" disabled={laeuft}>
+      <button type="submit" className="btn btn--dark" disabled={laeuft || bereitet}>
         {laeuft ? "Wird gesendet …" : "Termin verbindlich buchen"}
       </button>
     </form>

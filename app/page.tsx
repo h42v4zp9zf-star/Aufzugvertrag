@@ -93,9 +93,9 @@ export default function Startseite() {
             <Link href="/beratung" className="btn btn--dark btn--wide">
               Beratung buchen
             </Link>
-            <a href="#ablauf" className="btn btn--outline btn--wide">
+            <Link href="/anlagedaten" className="btn btn--outline btn--wide">
               Mehr erfahren
-            </a>
+            </Link>
           </div>
         </section>
 

@@ -58,14 +58,14 @@ h1, h2, h3, p { margin: 0; }
 .btn-row { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; width: 100%; max-width: 680px; }
 
 /* Sections */
-.hero { position: relative; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 140px 24px 72px; text-align: center; }
+.hero { position: relative; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 140px 24px 72px; text-align: center; }
 .hero--compact { min-height: 640px; padding-top: 96px; }
 .hero__text { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .hero h1 { font-size: clamp(32px, 5vw, 44px); font-weight: 500; letter-spacing: -0.01em; }
 .hero h2 { font-size: clamp(28px, 4vw, 36px); font-weight: 500; }
 .lead { font-size: 16px; line-height: 1.5; max-width: 560px; color: var(--muted); }
 .placeholder { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
-.hero__bild { position: relative; flex: 1 1 auto; width: min(100%, 640px); min-height: 280px; max-height: 520px; margin: 40px 0; border-radius: 12px; overflow: hidden; background: var(--line); }
+.hero__bild { position: relative; flex: 1 1 auto; width: min(100%, 640px); min-height: 280px; max-height: 520px; margin: 20px 0 28px; border-radius: 12px; overflow: hidden; background: var(--line); }
 .hero__bild img { object-fit: cover; }
 .hero--compact .hero__bild { min-height: 340px; }
 
@@ -96,6 +96,7 @@ h1, h2, h3, p { margin: 0; }
 .config__form { flex: 1 1 420px; min-width: 0; max-width: 560px; padding: 48px 40px 64px; display: flex; flex-direction: column; gap: 32px; }
 .config__form h1 { font-size: 32px; font-weight: 500; }
 .hint { font-size: 14px; color: var(--muted); line-height: 1.5; margin-top: 8px; }
+.hint a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
 .group { display: flex; flex-direction: column; gap: 12px; border: 0; padding: 0; margin: 0; min-width: 0; }
 .group legend, .group h2 { font-size: 16px; font-weight: 500; padding: 0; margin-bottom: 4px; }
 .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -192,14 +193,37 @@ td.right, th.right { text-align: right; }
 .btn--small { min-height: 36px; padding: 0 14px; font-size: 13px; }
 .muted { color: var(--muted); font-size: 14px; line-height: 1.5; }
 /* Terminkalender (Beratung vor Ort) */
-.kalender { display: flex; flex-direction: column; gap: 8px; }
-.kalender__reihe { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
-.kalender__kopf { font-size: 12px; color: var(--muted); text-align: center; }
-.zeiten { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; }
-.slot { min-height: 44px; padding: 0 4px; border: 1px solid var(--field); border-radius: var(--radius); background: var(--white); font-size: 14px; cursor: pointer; }
-.slot[aria-pressed="true"] { border: 2px solid var(--ink); font-weight: 500; }
-.slot:disabled { color: var(--faint); background: #f6f6f6; border-color: var(--line); text-decoration: line-through; cursor: not-allowed; }
-.slot:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+/* Kalender und Zeiten als Raster mit Linien (Wunsch Dario, 23.11.2026). */
+.kalender, .zeiten { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--field); border-radius: var(--radius); overflow: hidden; }
+.kalender__reihe { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; }
+.kalender__reihe > * { background: var(--white); }
+.kalender__reihe > .kalender__kopf { padding: 8px 0; font-size: 12px; color: var(--muted); text-align: center; background: #f6f6f6; }
+.zeiten { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.slot { min-height: 48px; padding: 0 4px; border: 0; border-radius: 0; background: var(--white); color: var(--ink); font-size: 14px; cursor: pointer; }
+@media (hover: hover) { .slot:hover:not(:disabled) { background: #f2f2f2; } }
+.slot[aria-pressed="true"], .slot[aria-pressed="true"]:hover { background: var(--ink); color: var(--white); font-weight: 500; }
+.slot:disabled { color: var(--faint); background: #f6f6f6; text-decoration: line-through; cursor: not-allowed; }
+.slot:focus-visible { outline: 2px solid var(--ink); outline-offset: -4px; }
+.slot[aria-pressed="true"]:focus-visible { outline-color: var(--white); }
+/* Dokumente zur Beratung */
+.dateien { list-style: none; margin: 0; padding: 0; border: 1px solid var(--field); border-radius: var(--radius); }
+.dateien li { display: flex; align-items: center; gap: 12px; padding: 10px 12px; font-size: 14px; }
+.dateien li + li { border-top: 1px solid var(--line); }
+.dateien__name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.dateien__groesse { color: var(--muted); white-space: nowrap; }
+.datei-knopf { align-self: flex-start; }
+.datei-knopf:focus-within { outline: 2px solid var(--ink); outline-offset: 2px; }
+.datei-knopf--aus { opacity: .5; cursor: progress; }
+.dok-link { white-space: nowrap; }
+.dok-link a { text-decoration: underline; }
+/* Infoseite „Wo finde ich die Angaben?“ */
+.portal--text { max-width: 680px; }
+.fundorte { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.fundorte li { display: flex; flex-direction: column; gap: 4px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.fundorte strong, .fundorte__link { font-weight: 500; }
+.fundorte__link { text-decoration: underline; text-underline-offset: 3px; }
+.fundorte li > span { font-size: 15px; line-height: 1.5; color: var(--muted); }
+.btn-row--start { justify-content: flex-start; }
 .contact { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: 100%; }
 @media (max-width: 600px) {
   .contact { grid-template-columns: minmax(0, 1fr); }

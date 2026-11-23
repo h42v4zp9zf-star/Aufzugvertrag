@@ -12,6 +12,7 @@ import {
   beratungAnlegen,
   beratungenListe,
   belegteTermine,
+  dokumentLaden,
   kontoAnlegen,
   kontoMitHashPerEmail,
   kontoPerSitzung,
@@ -157,4 +158,39 @@ test("Fester Termin: wird gespeichert, ist danach belegt und kann nicht doppelt 
   assert.equal(liste[0].termin_datum, "2026-11-24");
   assert.equal(liste[0].termin_zeit, "09:00");
   assert.equal(liste.at(-1)?.termin_datum, null, "ältere Buchung ohne Termin steht am Schluss");
+});
+
+test("Dokumente: werden mit der Buchung gespeichert, nur bei erfolgreicher Buchung", { skip }, async () => {
+  const kunde = { name: "Urs Muster", email: "urs@example.com", telefon: "079 222 22 22", adresse: "Seefeldstrasse 5, 8008 Zürich", anzahlAufzuege: 1, bemerkung: "" };
+  const pdf = Buffer.from("%PDF-1.4\nWartungsvertrag");
+  const jpg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]);
+  const id = await beratungAnlegen(d, {
+    ...kunde,
+    termin: { datum: "2026-11-26", zeit: "10:00" },
+    dokumente: [
+      { dateiname: "Vertrag alt.pdf", typ: "application/pdf", inhalt: pdf },
+      { dateiname: "Typenschild.jpg", typ: "image/jpeg", inhalt: jpg },
+    ],
+  });
+  const b = (await beratungenListe(d)).find((x) => x.id === id)!;
+  assert.deepEqual(
+    b.dokumente.map((x) => [x.dateiname, x.groesse]),
+    [["Vertrag alt.pdf", pdf.length], ["Typenschild.jpg", jpg.length]],
+  );
+  const geladen = await dokumentLaden(d, b.dokumente[1].id);
+  assert.equal(geladen?.typ, "image/jpeg");
+  assert.deepEqual(geladen?.inhalt, jpg, "Inhalt unverändert");
+  assert.equal(await dokumentLaden(d, 999999), null);
+
+  // Termin schon vergeben: weder Buchung noch Dokument wird gespeichert.
+  const vorher = (await d.query<{ n: number }>("SELECT count(*)::int AS n FROM beratung_dokumente")).rows[0].n;
+  await assert.rejects(
+    beratungAnlegen(d, { ...kunde, termin: { datum: "2026-11-26", zeit: "10:00" }, dokumente: [{ dateiname: "x.pdf", typ: "application/pdf", inhalt: pdf }] }),
+    TerminVergeben,
+  );
+  assert.equal((await d.query<{ n: number }>("SELECT count(*)::int AS n FROM beratung_dokumente")).rows[0].n, vorher);
+
+  // Ohne Dokumente: leere Liste.
+  const ohne = await beratungAnlegen(d, { ...kunde, termin: { datum: "2026-11-26", zeit: "11:00" } });
+  assert.deepEqual((await beratungenListe(d)).find((x) => x.id === ohne)?.dokumente, []);
 });

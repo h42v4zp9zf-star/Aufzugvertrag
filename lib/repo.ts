@@ -1,6 +1,7 @@
 // Alle Datenbankabfragen an einem Ort.
 import type { Db } from "./db.ts";
 import { PIKETT_STANDARD, type Anlage, type Preismodell, type PreismodellDaten, type Stufe } from "./pricing.ts";
+import type { DokumentTyp } from "./dokumente.ts";
 
 export type Rolle = "firma" | "admin";
 export type KontoStatus = "pruefung" | "aktiv" | "gesperrt";
@@ -139,6 +140,20 @@ export interface Beratung {
   /** „HH:MM“ */
   termin_zeit: string | null;
   erstellt_am: Date;
+  /** Hochgeladene Dokumente, ohne Inhalt (der wird erst beim Herunterladen geladen). */
+  dokumente: DokumentInfo[];
+}
+
+export interface DokumentInfo {
+  id: number;
+  dateiname: string;
+  groesse: number;
+}
+
+export interface NeuesDokument {
+  dateiname: string;
+  typ: DokumentTyp;
+  inhalt: Buffer;
 }
 
 /** Wird geworfen, wenn das Zeitfenster inzwischen von jemand anderem gebucht wurde. */
@@ -158,13 +173,36 @@ export async function beratungAnlegen(
     anzahlAufzuege: number;
     bemerkung: string;
     termin?: { datum: string; zeit: string };
+    dokumente?: NeuesDokument[];
   },
 ): Promise<number> {
+  const dok = b.dokumente ?? [];
   try {
+    // Buchung und Dokumente in einer einzigen Anweisung: Ist der Termin schon vergeben,
+    // wird auch kein Dokument gespeichert.
     const { rows } = await d.query<{ id: number }>(
-      `INSERT INTO beratungen (name, email, telefon, adresse, anzahl_aufzuege, bemerkung, termin_datum, termin_zeit)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-      [b.name, b.email, b.telefon, b.adresse, b.anzahlAufzuege, b.bemerkung, b.termin?.datum ?? null, b.termin?.zeit ?? null],
+      `WITH b AS (
+         INSERT INTO beratungen (name, email, telefon, adresse, anzahl_aufzuege, bemerkung, termin_datum, termin_zeit)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id
+       ), dok AS (
+         INSERT INTO beratung_dokumente (beratung_id, dateiname, typ, groesse, inhalt)
+         SELECT b.id, x.dateiname, x.typ, octet_length(x.inhalt), x.inhalt
+           FROM b, unnest($9::text[], $10::text[], $11::bytea[]) AS x(dateiname, typ, inhalt)
+       )
+       SELECT id FROM b`,
+      [
+        b.name,
+        b.email,
+        b.telefon,
+        b.adresse,
+        b.anzahlAufzuege,
+        b.bemerkung,
+        b.termin?.datum ?? null,
+        b.termin?.zeit ?? null,
+        dok.map((x) => x.dateiname),
+        dok.map((x) => x.typ),
+        dok.map((x) => x.inhalt),
+      ],
     );
     return rows[0].id;
   } catch (e) {
@@ -174,7 +212,9 @@ export async function beratungAnlegen(
 }
 
 const BERATUNG_SPALTEN = `id, name, email, telefon, adresse, anzahl_aufzuege, bemerkung,
-  to_char(termin_datum, 'YYYY-MM-DD') AS termin_datum, termin_zeit, erstellt_am`;
+  to_char(termin_datum, 'YYYY-MM-DD') AS termin_datum, termin_zeit, erstellt_am,
+  COALESCE((SELECT json_agg(json_build_object('id', x.id, 'dateiname', x.dateiname, 'groesse', x.groesse) ORDER BY x.id)
+              FROM beratung_dokumente x WHERE x.beratung_id = beratungen.id), '[]'::json) AS dokumente`;
 
 /** Neueste Termine zuerst; Buchungen ohne Termin (ältere) am Schluss. */
 export async function beratungenListe(d: Db): Promise<Beratung[]> {
@@ -183,6 +223,15 @@ export async function beratungenListe(d: Db): Promise<Beratung[]> {
       ORDER BY termin_datum DESC NULLS LAST, termin_zeit DESC, erstellt_am DESC`,
   );
   return rows;
+}
+
+/** Ein Dokument mit Inhalt, zum Herunterladen in der Verwaltung. */
+export async function dokumentLaden(d: Db, id: number): Promise<(NeuesDokument & { id: number }) | null> {
+  const { rows } = await d.query<NeuesDokument & { id: number }>(
+    "SELECT id, dateiname, typ, inhalt FROM beratung_dokumente WHERE id = $1",
+    [id],
+  );
+  return rows[0] ?? null;
 }
 
 /** Belegte Zeitfenster zwischen zwei Daten (inklusive), als „JJJJ-MM-TT HH:MM“. */
