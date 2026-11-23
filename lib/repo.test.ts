@@ -64,7 +64,7 @@ const DATEN: PreismodellDaten = {
   plzPraefixe: ["8"],
   hersteller: "alle",
   antriebe: ["seil"],
-  pakete: [{ stufe: "basis", grundpreisChf: 1000, reaktionszeitStd: 24, pikett: "tag" }],
+  pakete: [{ stufe: "basis", grundpreisChf: 1000, reaktionszeitStd: 24, pikett: "tag", vertragsdauerJahre: 3, kuendigungsfristMonate: 6 }],
   zuschlaege: { proHaltestelleUeber4Chf: 0, hydraulikChf: 0, alterUeber25JahreChf: 0, brandfallsteuerungChf: 0, proKabinenabschlusstuerChf: 0, sicherheitsdispositivChf: 0 },
   optionen: { fernueberwachung: null, verfuegbarkeit: null, ausserhalb: null },
 };
@@ -99,6 +99,8 @@ test("Konto, Sitzung, Freischaltung, Preismodell und Anfrage", { skip }, async (
   assert.equal(aktiv[0].firma, "Test AG");
   assert.equal(aktiv[0].firmaId, k.id);
   assert.equal(aktiv[0].pakete[0].pikett, "tag");
+  assert.equal(aktiv[0].pakete[0].vertragsdauerJahre, 3);
+  assert.equal(aktiv[0].pakete[0].kuendigungsfristMonate, 6);
 
   await preismodellSpeichern(d, k.id, DATEN, false);
   assert.equal((await aktivePreismodelle(d)).length, 0, "nicht veröffentlicht → nicht sichtbar");
@@ -166,6 +168,8 @@ test("Früher gespeicherte Pakete ohne Pikett-Angabe bekommen die bisherige Deck
   assert.equal(m.zuschlaege.sicherheitsdispositivChf, 0);
   assert.equal((await preismodellLaden(d, k.id))?.daten.zuschlaege.sicherheitsdispositivChf, 0);
   assert.equal(m.zuschlaege.proHaltestelleUeber4Chf, 90);
+  // Ohne Vertragsdauer (vor dem 23.11.2026 gespeichert): bleibt leer, der Vergleich zeigt «nicht angegeben».
+  assert.deepEqual(m.pakete.map((p) => p.vertragsdauerJahre), [undefined, undefined]);
 });
 
 test("Fester Termin: wird gespeichert, ist danach belegt und kann nicht doppelt gebucht werden", { skip }, async () => {

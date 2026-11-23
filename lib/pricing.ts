@@ -47,11 +47,31 @@ export const PIKETT_TEXT: Record<Pikett, string> = {
 export const PIKETT_STANDARD: Record<Stufe, Pikett> = { basis: "keine", standard: "24h", komplett: "24h" };
 const PIKETT_WERT: Record<Pikett, number> = { "24h": 1, tag: 0.5, keine: 0 };
 
+/** Auswahl im Preisformular: Vertragsdauer in Jahren und Kündigungsfrist in Monaten. */
+export const VERTRAGSDAUER_JAHRE = [1, 2, 3, 4, 5];
+export const KUENDIGUNGSFRIST_MONATE = [1, 3, 6, 12];
+
+export function dauerText(jahre: number): string {
+  return jahre === 1 ? "1 Jahr" : `${jahre} Jahre`;
+}
+export function fristText(monate: number): string {
+  return monate === 1 ? "1 Monat" : `${monate} Monate`;
+}
+/** z. B. «3 Jahre, Kündigungsfrist 6 Monate»; ohne Angabe «Dauer nicht angegeben». */
+export function laufzeitText(p: { vertragsdauerJahre?: number; kuendigungsfristMonate?: number }): string {
+  if (!p.vertragsdauerJahre) return "Dauer nicht angegeben";
+  const dauer = dauerText(p.vertragsdauerJahre);
+  return p.kuendigungsfristMonate ? `${dauer}, Kündigungsfrist ${fristText(p.kuendigungsfristMonate)}` : dauer;
+}
+
 export interface Paket {
   stufe: Stufe;
   grundpreisChf: number; // pro Aufzug und Jahr
   reaktionszeitStd: number;
   pikett: Pikett;
+  /** Vertragsdauer und Kündigungsfrist (Wunsch Dario, 23.11.2026). Fehlen bei älteren Preismodellen. */
+  vertragsdauerJahre?: number;
+  kuendigungsfristMonate?: number;
 }
 
 // Was eine Liftfirma im Portal erfasst (ohne Name und Bewertung).
@@ -95,6 +115,8 @@ export interface Angebot {
   wartungenProJahr: number;
   reaktionszeitStd: number;
   pikett: Pikett;
+  vertragsdauerJahre?: number;
+  kuendigungsfristMonate?: number;
   bewertung: number;
   score: number;
 }
@@ -156,6 +178,8 @@ export function vergleiche(
         wartungenProJahr: WARTUNGEN_PRO_STUFE[stufe],
         reaktionszeitStd: paket.reaktionszeitStd,
         pikett: paket.pikett ?? PIKETT_STANDARD[stufe],
+        vertragsdauerJahre: paket.vertragsdauerJahre,
+        kuendigungsfristMonate: paket.kuendigungsfristMonate,
         bewertung: m.bewertung,
       });
     }

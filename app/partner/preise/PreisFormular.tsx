@@ -1,12 +1,12 @@
 "use client";
 
 import { startTransition, useActionState, useState } from "react";
-import { chf, PIKETT, PIKETT_STANDARD, PIKETT_TEXT, preisProAufzug, STUFEN, WARTUNGEN_PRO_STUFE, ZUSCHLAG_TEXT, type Anlage, type Pikett, type Preismodell, type PreismodellDaten, type Stufe } from "@/lib/pricing";
+import { chf, dauerText, fristText, KUENDIGUNGSFRIST_MONATE, PIKETT, PIKETT_STANDARD, PIKETT_TEXT, preisProAufzug, STUFEN, VERTRAGSDAUER_JAHRE, WARTUNGEN_PRO_STUFE, ZUSCHLAG_TEXT, type Anlage, type Pikett, type Preismodell, type PreismodellDaten, type Stufe } from "@/lib/pricing";
 import { HERSTELLER, PLZ_KREISE, STUFEN_NAMEN } from "@/lib/stammdaten";
 import { preiseSpeichern, type FormStatus } from "../actions";
 import { Fehlerliste } from "../Formulare";
 
-type PaketWerte = { an: boolean; grundpreis: string; reaktion: string; pikett: Pikett };
+type PaketWerte = { an: boolean; grundpreis: string; reaktion: string; pikett: Pikett; dauer: string; frist: string };
 type Zuschlag = "z_halte" | "z_hydraulik" | "z_alter" | "z_brandfall" | "z_tuer" | "z_sicherheit";
 
 const ZUSCHLAEGE: { key: Zuschlag; label: string; feld: keyof PreismodellDaten["zuschlaege"] }[] = (
@@ -50,8 +50,16 @@ export function PreisFormular({ gespeichert, veroeffentlicht }: { gespeichert: P
     for (const s of STUFEN) {
       const p = gespeichert?.pakete.find((x) => x.stufe === s);
       init[s] = p
-        ? { an: true, grundpreis: String(p.grundpreisChf), reaktion: String(p.reaktionszeitStd), pikett: p.pikett ?? PIKETT_STANDARD[s] }
-        : { an: !gespeichert, grundpreis: "", reaktion: "", pikett: PIKETT_STANDARD[s] };
+        ? {
+            an: true,
+            grundpreis: String(p.grundpreisChf),
+            reaktion: String(p.reaktionszeitStd),
+            pikett: p.pikett ?? PIKETT_STANDARD[s],
+            // Ältere Preismodelle haben keine Vertragsdauer: dann muss die Firma sie beim Speichern wählen.
+            dauer: p.vertragsdauerJahre ? String(p.vertragsdauerJahre) : "",
+            frist: p.kuendigungsfristMonate ? String(p.kuendigungsfristMonate) : "",
+          }
+        : { an: !gespeichert, grundpreis: "", reaktion: "", pikett: PIKETT_STANDARD[s], dauer: "", frist: "" };
     }
     return init;
   });
@@ -188,6 +196,28 @@ export function PreisFormular({ gespeichert, veroeffentlicht }: { gespeichert: P
                         ))}
                       </select>
                     </label>
+                    <label className="field">
+                      Vertragsdauer
+                      <select name={`${s}_dauer`} value={p.dauer} onChange={(e) => setPaket(s, "dauer", e.target.value)} required>
+                        <option value="">Bitte wählen</option>
+                        {VERTRAGSDAUER_JAHRE.map((j) => (
+                          <option key={j} value={j}>
+                            {dauerText(j)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="field">
+                      Kündigungsfrist
+                      <select name={`${s}_frist`} value={p.frist} onChange={(e) => setPaket(s, "frist", e.target.value)} required>
+                        <option value="">Bitte wählen</option>
+                        {KUENDIGUNGSFRIST_MONATE.map((m) => (
+                          <option key={m} value={m}>
+                            {fristText(m)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                   </>
                 )}
               </div>
@@ -197,7 +227,8 @@ export function PreisFormular({ gespeichert, veroeffentlicht }: { gespeichert: P
         <p className="muted">
           Leistungen je Paket: Basis = 2 Wartungen pro Jahr, Inspektion, Notruf und Personenbefreiung. Standard = 4 Wartungen pro Jahr,
           zusätzlich Störungseinsätze. Komplett = 6 Wartungen pro Jahr, zusätzlich Reparaturen und Verschleissteile. Zu welchen Zeiten Ihr
-          Störungsdienst ausrückt (Pikett-Deckung), wählen Sie pro Paket.
+          Störungsdienst ausrückt (Pikett-Deckung), wählen Sie pro Paket. Ebenso die Vertragsdauer (1 bis 5 Jahre) und die
+          Kündigungsfrist, also wie lange vor Vertragsende gekündigt werden muss. Kunden sehen beides im Angebotsvergleich.
         </p>
       </fieldset>
 

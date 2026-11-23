@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { vergleiche, preisProAufzug, deckt, chf, type Anlage, type Preismodell } from "./pricing.ts";
+import { vergleiche, preisProAufzug, deckt, chf, laufzeitText, type Anlage, type Preismodell } from "./pricing.ts";
 
 const modell = (firma: string, grund: number, extra: Partial<Preismodell> = {}): Preismodell => ({
   firma,
@@ -110,6 +110,25 @@ test("Pikett-Deckung erscheint im Angebot und zählt beim Service", () => {
     modell("Rund um die Uhr", 2000, { pakete: paket("24h") }),
   ]);
   assert.deepEqual(r.standard.map((a) => [a.firma, a.pikett]), [["Rund um die Uhr", "24h"], ["Tag", "tag"], ["Ohne", "keine"]]);
+});
+
+test("Vertragsdauer und Kündigungsfrist erscheinen im Angebot, ändern die Reihenfolge nicht", () => {
+  const paket = (grundpreisChf: number, vertragsdauerJahre?: number, kuendigungsfristMonate?: number) => [
+    { stufe: "standard" as const, grundpreisChf, reaktionszeitStd: 4, pikett: "24h" as const, vertragsdauerJahre, kuendigungsfristMonate },
+  ];
+  const r = vergleiche(anlage, [
+    modell("Kurz", 0, { pakete: paket(2100, 1, 3) }),
+    modell("Lang", 0, { pakete: paket(2000, 5, 12) }),
+    modell("Alt", 0, { pakete: paket(2050) }),
+  ]);
+  assert.deepEqual(
+    r.standard.map((a) => [a.firma, a.vertragsdauerJahre, a.kuendigungsfristMonate]),
+    [["Lang", 5, 12], ["Alt", undefined, undefined], ["Kurz", 1, 3]],
+    "Reihenfolge nur nach Preis, Service und Bewertung",
+  );
+  assert.equal(laufzeitText(r.standard[0]), "5 Jahre, Kündigungsfrist 12 Monate");
+  assert.equal(laufzeitText(r.standard[1]), "Dauer nicht angegeben");
+  assert.equal(laufzeitText({ vertragsdauerJahre: 1, kuendigungsfristMonate: 1 }), "1 Jahr, Kündigungsfrist 1 Monat");
 });
 
 test("CHF-Format mit Schweizer Tausendertrennzeichen", () => {
