@@ -1,7 +1,7 @@
 // Datenbankzugriff (PostgreSQL). Verbindung über die Umgebungsvariable DATABASE_URL
 // (oder POSTGRES_URL, wie sie manche Hoster automatisch setzen).
 import pg from "pg";
-import { hashPasswort, passwortFehler, pruefePasswort } from "./passwort.ts";
+import { emailFehler, hashPasswort, passwortFehler, pruefePasswort } from "./passwort.ts";
 
 export interface Db {
   query<T = Record<string, unknown>>(text: string, params?: unknown[]): Promise<{ rows: T[] }>;
@@ -110,6 +110,11 @@ export async function adminAusUmgebung(d: Db, env: Record<string, string | undef
   const email = env.ADMIN_EMAIL?.trim().toLowerCase();
   const passwort = env.ADMIN_PASSWORT ?? "";
   if (!email) return;
+  const emailProblem = emailFehler(email);
+  if (emailProblem) {
+    console.warn(`ADMIN_EMAIL ungültig, Verwaltungskonto nicht eingerichtet: ${emailProblem}`);
+    return;
+  }
   const fehler = passwortFehler(passwort);
   if (fehler) {
     console.warn(`ADMIN_PASSWORT ungültig, Verwaltungskonto nicht eingerichtet: ${fehler}`);

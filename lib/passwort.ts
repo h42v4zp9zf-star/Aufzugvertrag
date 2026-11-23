@@ -35,3 +35,12 @@ export function passwortFehler(passwort: string): string | null {
   if (passwort.length < 10) return "Das Passwort muss mindestens 10 Zeichen lang sein.";
   return null;
 }
+
+// Einfache Prüfung der Form name@domain.ch (Wunsch Dario 23.11.2026: das
+// Verwaltungskonto darf nie mit einer Adresse ohne @ angelegt werden).
+const EMAIL_MUSTER = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function emailFehler(email: string): string | null {
+  if (!EMAIL_MUSTER.test(email)) return "Die E-Mail-Adresse ist ungültig (Beispiel: name@firma.ch).";
+  return null;
+}
