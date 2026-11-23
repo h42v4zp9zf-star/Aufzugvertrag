@@ -27,3 +27,10 @@ test("Alte Links ohne Attika-Angabe funktionieren weiter", () => {
   p.set("attika", "vielleicht");
   assert.equal(fromParams(p)?.attika, undefined);
 });
+
+test("Hersteller aus dem Link: eigener Name wird gekürzt, leer gilt als unbekannt", () => {
+  const basis = "plz=8049&halte=5";
+  assert.equal(fromParams(new URLSearchParams(basis + "&hersteller=Garaventa"))?.hersteller, "Garaventa");
+  assert.equal(fromParams(new URLSearchParams(basis + "&hersteller=%20"))?.hersteller, "unbekannt");
+  assert.equal(fromParams(new URLSearchParams(basis + "&hersteller=" + "x".repeat(200)))?.hersteller.length, 80);
+});

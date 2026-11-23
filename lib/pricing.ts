@@ -1,5 +1,6 @@
 // Vergleichslogik: berechnet aus den Preismodellen der Liftfirmen
 // feste Jahrespreise für eine Kundenanlage und rangiert sie pro Stufe.
+import { herstellerGruppe } from "./stammdaten.ts";
 
 export type Stufe = "basis" | "standard" | "komplett";
 export type Antrieb = "seil" | "hydraulik" | "unbekannt";
@@ -87,10 +88,8 @@ const AKTUELLES_JAHR = 2026;
 
 export function deckt(modell: Preismodell, anlage: Anlage): boolean {
   const imGebiet = modell.plzPraefixe.some((p) => anlage.plz.trim().startsWith(p));
-  const herstellerOk =
-    modell.hersteller === "alle" ||
-    anlage.hersteller === "unbekannt" ||
-    modell.hersteller.includes(anlage.hersteller);
+  const hersteller = herstellerGruppe(anlage.hersteller);
+  const herstellerOk = modell.hersteller === "alle" || hersteller === "unbekannt" || modell.hersteller.includes(hersteller);
   const antriebOk = anlage.antrieb === "unbekannt" || modell.antriebe.includes(anlage.antrieb);
   return imGebiet && herstellerOk && antriebOk;
 }

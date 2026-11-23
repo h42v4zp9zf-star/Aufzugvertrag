@@ -208,6 +208,19 @@ td.right, th.right { text-align: right; }
 .slot:disabled { color: var(--faint); background: #f6f6f6; text-decoration: line-through; cursor: not-allowed; }
 .slot:focus-visible { outline: 2px solid var(--ink); outline-offset: -4px; }
 .slot[aria-pressed="true"]:focus-visible { outline-color: var(--white); }
+/* Hersteller-Auswahl mit Suchliste */
+.hersteller-extra { grid-column: 1 / -1; }
+.hersteller-suche { display: flex; flex-direction: column; border: 1px solid var(--field); border-radius: var(--radius); overflow: hidden; background: var(--white); }
+.hersteller-suche input { min-height: 44px; padding: 0 12px; border: 0; border-bottom: 1px solid var(--line); background: var(--white); color: var(--ink); width: 100%; font-size: 16px; }
+.hersteller-suche input:focus { outline: 2px solid var(--ink); outline-offset: -2px; }
+.hersteller-liste { list-style: none; margin: 0; padding: 0; max-height: 264px; overflow-y: auto; overscroll-behavior: contain; }
+.hersteller-liste li + li { border-top: 1px solid var(--line); }
+.hersteller-eintrag { display: flex; align-items: center; width: 100%; min-height: 44px; padding: 0 12px; border: 0; background: var(--white); color: var(--ink); font-size: 14px; text-align: left; cursor: pointer; }
+@media (hover: hover) { .hersteller-eintrag:hover { background: #f2f2f2; } }
+.hersteller-eintrag[aria-pressed="true"] { background: var(--ink); color: var(--white); font-weight: 500; }
+.hersteller-eintrag--fix { font-weight: 500; }
+.hersteller-eintrag:focus-visible { outline: 2px solid var(--ink); outline-offset: -3px; }
+.hersteller-leer { padding: 12px; font-size: 14px; color: var(--muted); }
 /* Dokumente zur Beratung */
 .dateien { list-style: none; margin: 0; padding: 0; border: 1px solid var(--field); border-radius: var(--radius); }
 .dateien li { display: flex; align-items: center; gap: 12px; padding: 10px 12px; font-size: 14px; }

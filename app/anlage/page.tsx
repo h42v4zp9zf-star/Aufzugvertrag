@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Header } from "@/components/Header";
 import { toParams } from "@/lib/anlageParams";
+import { HerstellerWahl } from "./HerstellerWahl";
 import type { Antrieb, JaNeinUnbekannt } from "@/lib/pricing";
 
 const GEBAEUDETYPEN = ["Mehrfamilienhaus", "Büro", "Hotel", "Spital / Pflegeheim", "Industrie", "Gewerbe", "Mischnutzung", "Andere"];
@@ -25,7 +26,6 @@ const ATTIKA: { value: "ja" | "nein"; label: string }[] = [
   { value: "ja", label: "Ja" },
   { value: "nein", label: "Nein" },
 ];
-const HERSTELLER = ["unbekannt", "Schindler", "KONE", "TK Elevator", "Otis", "Emch", "AS Aufzüge", "Andere"];
 const BRANDFALL: { value: JaNeinUnbekannt; label: string }[] = [
   { value: "ja", label: "Ja" },
   { value: "nein", label: "Nein" },
@@ -65,7 +65,7 @@ export default function AnlageErfassen() {
   const [anzahl, setAnzahl] = useState("1");
   const [art, setArt] = useState(ARTEN[0]);
   const [antrieb, setAntrieb] = useState<Antrieb>("seil");
-  const [hersteller, setHersteller] = useState(HERSTELLER[0]);
+  const [hersteller, setHersteller] = useState("unbekannt");
   const [halte, setHalte] = useState("");
   const [brandfall, setBrandfall] = useState<JaNeinUnbekannt>("unbekannt");
   const [attika, setAttika] = useState<"ja" | "nein" | null>(null);
@@ -189,17 +189,9 @@ export default function AnlageErfassen() {
 
           <fieldset className="group">
             <legend>Technik</legend>
-            <div className="grid2">
-              <label className="field">
-                Hersteller *
-                <select value={hersteller} onChange={(e) => setHersteller(e.target.value)}>
-                  {HERSTELLER.map((h) => (
-                    <option key={h} value={h}>
-                      {h === "unbekannt" ? "Unbekannt" : h}
-                    </option>
-                  ))}
-                </select>
-              </label>
+            {/* dense: Haltestellen rückt neben den Hersteller, die Suchliste darunter über die ganze Breite */}
+            <div className="grid2" style={{ gridAutoFlow: "row dense" }}>
+              <HerstellerWahl value={hersteller} onChange={setHersteller} />
               <label className="field">
                 Haltestellen *
                 <input type="number" min={2} placeholder="5" value={halte} onChange={(e) => { setHalte(e.target.value); setFehler(null); }} required />

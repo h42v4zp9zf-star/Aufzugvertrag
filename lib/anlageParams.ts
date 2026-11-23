@@ -39,7 +39,7 @@ export function fromParams(p: URLSearchParams): Anlage | null {
     anzahlAufzuege: Math.max(1, num(p.get("anzahl")) ?? 1),
     aufzugsart: p.get("art") ?? "Personenaufzug",
     antrieb: oneOf<Antrieb>(p.get("antrieb"), ["seil", "hydraulik", "unbekannt"], "unbekannt"),
-    hersteller: p.get("hersteller") ?? "unbekannt",
+    hersteller: (p.get("hersteller") ?? "").trim().slice(0, 80) || "unbekannt",
     haltestellen: halte,
     brandfallsteuerung: oneOf<JaNeinUnbekannt>(p.get("brandfall"), ["ja", "nein", "unbekannt"], "unbekannt"),
     attika: p.get("attika") === "ja" ? "ja" : p.get("attika") === "nein" ? "nein" : undefined,
