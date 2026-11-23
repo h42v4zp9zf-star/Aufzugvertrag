@@ -55,6 +55,12 @@ CREATE TABLE IF NOT EXISTS beratungen (
   bemerkung        TEXT NOT NULL DEFAULT '',
   erstellt_am      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- Fester Termin (seit 23.11.2026). Ältere Buchungen haben keinen.
+ALTER TABLE beratungen ADD COLUMN IF NOT EXISTS termin_datum DATE;
+ALTER TABLE beratungen ADD COLUMN IF NOT EXISTS termin_zeit TEXT;
+-- Pro Zeitfenster nur eine Buchung, auch wenn zwei Kunden gleichzeitig klicken.
+CREATE UNIQUE INDEX IF NOT EXISTS beratungen_termin_eindeutig
+  ON beratungen (termin_datum, termin_zeit) WHERE termin_datum IS NOT NULL;
 `;
 
 let pool: pg.Pool | null = null;

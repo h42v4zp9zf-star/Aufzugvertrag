@@ -11,6 +11,7 @@ import {
   anfragenListe,
   beratungAnlegen,
   beratungenListe,
+  belegteTermine,
   kontoAnlegen,
   kontoMitHashPerEmail,
   kontoPerSitzung,
@@ -19,6 +20,7 @@ import {
   preismodellSpeichern,
   sitzungAnlegen,
   sitzungLoeschen,
+  TerminVergeben,
 } from "./repo.ts";
 import type { Anlage, PreismodellDaten } from "./pricing.ts";
 
@@ -142,4 +144,17 @@ test("Früher gespeicherte Pakete ohne Pikett-Angabe bekommen die bisherige Deck
   const m = (await aktivePreismodelle(d)).find((x) => x.firmaId === k.id)!;
   assert.deepEqual(m.pakete.map((p) => p.pikett), ["keine", "24h"]);
   assert.deepEqual((await preismodellLaden(d, k.id))?.daten.pakete.map((p) => p.pikett), ["keine", "24h"]);
+});
+
+test("Fester Termin: wird gespeichert, ist danach belegt und kann nicht doppelt gebucht werden", { skip }, async () => {
+  const kunde = { name: "Lea Muster", email: "lea@example.com", telefon: "079 111 11 11", adresse: "Bahnhofstrasse 1, 8001 Zürich", anzahlAufzuege: 1, bemerkung: "" };
+  await beratungAnlegen(d, { ...kunde, termin: { datum: "2026-11-24", zeit: "08:00" } });
+  await beratungAnlegen(d, { ...kunde, termin: { datum: "2026-11-24", zeit: "09:00" } });
+  assert.deepEqual((await belegteTermine(d, "2026-11-24", "2026-11-30")).sort(), ["2026-11-24 08:00", "2026-11-24 09:00"]);
+  assert.deepEqual(await belegteTermine(d, "2026-11-25", "2026-11-30"), []);
+  await assert.rejects(beratungAnlegen(d, { ...kunde, name: "Zweiter Kunde", termin: { datum: "2026-11-24", zeit: "08:00" } }), TerminVergeben);
+  const liste = await beratungenListe(d);
+  assert.equal(liste[0].termin_datum, "2026-11-24");
+  assert.equal(liste[0].termin_zeit, "09:00");
+  assert.equal(liste.at(-1)?.termin_datum, null, "ältere Buchung ohne Termin steht am Schluss");
 });

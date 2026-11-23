@@ -6,10 +6,10 @@ import { db, dbKonfiguriert } from "@/lib/db";
 import { chf, VERMITTLUNGSGEBUEHR_CHF } from "@/lib/pricing";
 import { anfragenListe, beratungenListe, kontenListe, type KontoStatus } from "@/lib/repo";
 import { kontoErforderlich } from "@/lib/sitzung";
+import { BERATUNG_PREIS_CHF } from "@/lib/config";
+import { terminText } from "@/lib/termine";
 
 export const dynamic = "force-dynamic";
-
-const BERATUNG_PAUSCHALE_CHF = 130;
 
 const STATUS_TEXT: Record<KontoStatus, string> = { pruefung: "In Prüfung", aktiv: "Freigeschaltet", gesperrt: "Gesperrt" };
 
@@ -90,7 +90,7 @@ export default async function AdminPage() {
           <div className="row-between">
             <h2>Beratungen vor Ort</h2>
             <span className="muted">
-              {beratungen.length} Buchung(en) · Anfangspauschalen {chf(beratungen.length * BERATUNG_PAUSCHALE_CHF)}
+              {beratungen.length} Buchung(en) · Fixpreise {chf(beratungen.length * BERATUNG_PREIS_CHF)}
             </span>
           </div>
           {beratungen.length === 0 ? (
@@ -100,7 +100,7 @@ export default async function AdminPage() {
               <table>
                 <thead>
                   <tr>
-                    <th>Datum</th>
+                    <th>Termin</th>
                     <th>Kunde</th>
                     <th>Liegenschaft</th>
                     <th>Aufzüge</th>
@@ -110,7 +110,13 @@ export default async function AdminPage() {
                 <tbody>
                   {beratungen.map((b) => (
                     <tr key={b.id}>
-                      <td>{new Date(b.erstellt_am).toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "numeric" })}</td>
+                      <td>
+                        {b.termin_datum && b.termin_zeit ? terminText(b.termin_datum, b.termin_zeit) : "Noch abzumachen"}
+                        <br />
+                        <span className="muted">
+                          gebucht am {new Date(b.erstellt_am).toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                        </span>
+                      </td>
                       <td>
                         {b.name}
                         <br />

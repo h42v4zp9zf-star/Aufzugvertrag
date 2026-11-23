@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { BERATUNG_PREIS_CHF } from "@/lib/config";
 
 export default function Startseite() {
   return (
@@ -76,7 +77,7 @@ export default function Startseite() {
             <h2>Keine Anlagedaten zur Hand?</h2>
             <p className="lead">
               Unsere Fachperson kommt vorbei, erfasst die Anlage und erstellt Ihren Vergleich.
-              Anfangspauschale CHF 130, danach nach Aufwand.
+              Fixpreis CHF {BERATUNG_PREIS_CHF}, ohne Zusatzkosten. Termin direkt online wählen.
             </p>
           </div>
           <div className="hero__bild">

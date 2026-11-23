@@ -21,6 +21,7 @@ export function toParams(a: Anlage): URLSearchParams {
   p.set("hersteller", a.hersteller);
   p.set("halte", String(a.haltestellen));
   p.set("brandfall", a.brandfallsteuerung);
+  if (a.attika) p.set("attika", a.attika);
   if (a.baujahr !== undefined) p.set("baujahr", String(a.baujahr));
   if (a.kabinenabschlusstueren !== undefined) p.set("tueren", String(a.kabinenabschlusstueren));
   if (a.traglastKg !== undefined) p.set("traglast", String(a.traglastKg));
@@ -41,6 +42,7 @@ export function fromParams(p: URLSearchParams): Anlage | null {
     hersteller: p.get("hersteller") ?? "unbekannt",
     haltestellen: halte,
     brandfallsteuerung: oneOf<JaNeinUnbekannt>(p.get("brandfall"), ["ja", "nein", "unbekannt"], "unbekannt"),
+    attika: p.get("attika") === "ja" ? "ja" : p.get("attika") === "nein" ? "nein" : undefined,
     baujahr: num(p.get("baujahr")),
     kabinenabschlusstueren: num(p.get("tueren")),
     traglastKg: num(p.get("traglast")),

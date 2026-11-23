@@ -19,6 +19,8 @@ export interface Anlage {
   hersteller: string;
   haltestellen: number;
   brandfallsteuerung: JaNeinUnbekannt;
+  /** Attika vorhanden (Wunsch Dario, 23.11.2026). Bei älteren Anfragen fehlt die Angabe. */
+  attika?: "ja" | "nein";
   baujahr?: number;
   kabinenabschlusstueren?: number;
   traglastKg?: number;

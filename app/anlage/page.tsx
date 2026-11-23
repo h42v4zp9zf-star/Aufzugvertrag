@@ -21,6 +21,10 @@ const BILD: Record<Antrieb, { src: string; alt: string }> = {
   hydraulik: { src: "/bilder/antrieb-hydraulik.jpg", alt: "Hydraulikaggregat mit roter Pumpe im Maschinenraum" },
   unbekannt: { src: "/bilder/antrieb-unbekannt.jpg", alt: "Blick in einen Aufzugsschacht mit Antrieb und Seilen" },
 };
+const ATTIKA: { value: "ja" | "nein"; label: string }[] = [
+  { value: "ja", label: "Ja" },
+  { value: "nein", label: "Nein" },
+];
 const HERSTELLER = ["unbekannt", "Schindler", "KONE", "TK Elevator", "Otis", "Emch", "AS Aufzüge", "Andere"];
 const BRANDFALL: { value: JaNeinUnbekannt; label: string }[] = [
   { value: "ja", label: "Ja" },
@@ -34,7 +38,7 @@ function Choices<T extends string>({
   onChange,
 }: {
   options: { value: T; label: string }[];
-  value: T;
+  value: T | null;
   onChange: (v: T) => void;
 }) {
   return (
@@ -64,6 +68,7 @@ export default function AnlageErfassen() {
   const [hersteller, setHersteller] = useState(HERSTELLER[0]);
   const [halte, setHalte] = useState("");
   const [brandfall, setBrandfall] = useState<JaNeinUnbekannt>("unbekannt");
+  const [attika, setAttika] = useState<"ja" | "nein" | null>(null);
   const [baujahr, setBaujahr] = useState("");
   const [tueren, setTueren] = useState("");
   const [traglast, setTraglast] = useState("");
@@ -79,6 +84,7 @@ export default function AnlageErfassen() {
     if (!/^\d{4}$/.test(plz.trim())) return setFehler("Bitte eine vierstellige Postleitzahl angeben.");
     if (!(Number(halte) >= 2)) return setFehler("Bitte die Anzahl Haltestellen angeben (mindestens 2).");
     if (!(Number(anzahl) >= 1)) return setFehler("Bitte die Anzahl Aufzüge angeben.");
+    if (!attika) return setFehler("Bitte angeben, ob eine Attika vorhanden ist.");
     setFehler(null);
     const params = toParams({
       gebaeudetyp,
@@ -89,6 +95,7 @@ export default function AnlageErfassen() {
       hersteller,
       haltestellen: Number(halte),
       brandfallsteuerung: brandfall,
+      attika,
       baujahr: opt(baujahr),
       kabinenabschlusstueren: opt(tueren),
       traglastKg: opt(traglast),
@@ -219,6 +226,14 @@ export default function AnlageErfassen() {
             <div className="grid3">
               <Choices options={BRANDFALL} value={brandfall} onChange={setBrandfall} />
             </div>
+          </fieldset>
+
+          <fieldset className="group">
+            <legend>Attika vorhanden *</legend>
+            <div className="grid3">
+              <Choices options={ATTIKA} value={attika} onChange={setAttika} />
+            </div>
+            <p className="hint">Zurückversetztes oberstes Geschoss (Attikageschoss).</p>
           </fieldset>
 
           <fieldset className="group">

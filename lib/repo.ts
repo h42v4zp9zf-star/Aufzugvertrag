@@ -134,24 +134,65 @@ export interface Beratung {
   adresse: string;
   anzahl_aufzuege: number;
   bemerkung: string;
+  /** „JJJJ-MM-TT“, bei älteren Buchungen ohne Termin null */
+  termin_datum: string | null;
+  /** „HH:MM“ */
+  termin_zeit: string | null;
   erstellt_am: Date;
+}
+
+/** Wird geworfen, wenn das Zeitfenster inzwischen von jemand anderem gebucht wurde. */
+export class TerminVergeben extends Error {
+  constructor() {
+    super("Termin bereits vergeben");
+  }
 }
 
 export async function beratungAnlegen(
   d: Db,
-  b: { name: string; email: string; telefon: string; adresse: string; anzahlAufzuege: number; bemerkung: string },
+  b: {
+    name: string;
+    email: string;
+    telefon: string;
+    adresse: string;
+    anzahlAufzuege: number;
+    bemerkung: string;
+    termin?: { datum: string; zeit: string };
+  },
 ): Promise<number> {
-  const { rows } = await d.query<{ id: number }>(
-    `INSERT INTO beratungen (name, email, telefon, adresse, anzahl_aufzuege, bemerkung)
-     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-    [b.name, b.email, b.telefon, b.adresse, b.anzahlAufzuege, b.bemerkung],
-  );
-  return rows[0].id;
+  try {
+    const { rows } = await d.query<{ id: number }>(
+      `INSERT INTO beratungen (name, email, telefon, adresse, anzahl_aufzuege, bemerkung, termin_datum, termin_zeit)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+      [b.name, b.email, b.telefon, b.adresse, b.anzahlAufzuege, b.bemerkung, b.termin?.datum ?? null, b.termin?.zeit ?? null],
+    );
+    return rows[0].id;
+  } catch (e) {
+    if ((e as { code?: string }).code === "23505") throw new TerminVergeben();
+    throw e;
+  }
 }
 
+const BERATUNG_SPALTEN = `id, name, email, telefon, adresse, anzahl_aufzuege, bemerkung,
+  to_char(termin_datum, 'YYYY-MM-DD') AS termin_datum, termin_zeit, erstellt_am`;
+
+/** Neueste Termine zuerst; Buchungen ohne Termin (ältere) am Schluss. */
 export async function beratungenListe(d: Db): Promise<Beratung[]> {
-  const { rows } = await d.query<Beratung>("SELECT * FROM beratungen ORDER BY erstellt_am DESC");
+  const { rows } = await d.query<Beratung>(
+    `SELECT ${BERATUNG_SPALTEN} FROM beratungen
+      ORDER BY termin_datum DESC NULLS LAST, termin_zeit DESC, erstellt_am DESC`,
+  );
   return rows;
+}
+
+/** Belegte Zeitfenster zwischen zwei Daten (inklusive), als „JJJJ-MM-TT HH:MM“. */
+export async function belegteTermine(d: Db, von: string, bis: string): Promise<string[]> {
+  const { rows } = await d.query<{ schluessel: string }>(
+    `SELECT to_char(termin_datum, 'YYYY-MM-DD') || ' ' || termin_zeit AS schluessel
+       FROM beratungen WHERE termin_datum BETWEEN $1::date AND $2::date`,
+    [von, bis],
+  );
+  return rows.map((r) => r.schluessel);
 }
 
 export async function anfragenListe(d: Db, kontoId?: number): Promise<Anfrage[]> {

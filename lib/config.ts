@@ -12,3 +12,5 @@ export const ZUSATZ_DOMAIN = "liftvergleich.ch";
 export const KONTAKT_EMAIL = "info@liftvergleich.ch";
 export const VERANTWORTLICH = "Dario Springer";
 export const ADRESSE = { strasse: "Limmattalstrasse 19", ort: "8049 Zürich", land: "Schweiz" };
+// Beratung vor Ort: Fixpreis ohne Zusatzaufwand (Entscheid Dario, 23.11.2026; vorher CHF 130 + Aufwand).
+export const BERATUNG_PREIS_CHF = 100;
