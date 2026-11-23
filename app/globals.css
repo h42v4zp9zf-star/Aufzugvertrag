@@ -259,6 +259,26 @@ td.right, th.right { text-align: right; }
 .field--breit { grid-column: 1 / -1; }
 .wahl { display: flex; flex-wrap: wrap; gap: 8px; }
 .wahl .choice { flex: 0 1 auto; }
+/* Vertragsunterlagen der Liftfirmen */
+.unterlagen { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.unterlagen li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; padding: 12px 0; border-bottom: 1px solid var(--line); min-width: 0; }
+.unterlagen li:first-child { border-top: 1px solid var(--line); }
+.unterlagen__name { flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; text-decoration: underline; text-underline-offset: 2px; }
+.unterlagen__frage { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.unterlagen__form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.unterlagen__form .field { flex: 1 1 260px; min-width: 0; }
+.tabelle-link { text-decoration: underline; text-underline-offset: 2px; text-decoration-color: var(--line); }
+.tabelle-link:hover { text-decoration-color: currentColor; }
+.betraege { list-style: none; margin: 0; padding: 0; }
+.betraege li { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.betraege li:first-child { border-top: 1px solid var(--line); }
+.betraege__chf { white-space: nowrap; font-variant-numeric: tabular-nums; }
+td.nowrap { white-space: nowrap; }
+.untertitel { font-size: 15px; font-weight: 500; margin: 8px 0 0; }
+.firma-kopf { display: flex; flex-direction: column; gap: 12px; }
+.firma-kopf__zeile { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.firma-kopf__aktionen { display: flex; flex-wrap: wrap; gap: 8px; }
+.firma-kopf .link-muted { text-align: left; align-self: flex-start; }
 .angaben { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; margin: 0; }
 .angaben div { min-width: 0; }
 .angaben dt { font-size: 13px; color: var(--muted); }

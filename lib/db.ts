@@ -75,6 +75,18 @@ CREATE TABLE IF NOT EXISTS beratung_dokumente (
 CREATE INDEX IF NOT EXISTS beratung_dokumente_beratung ON beratung_dokumente (beratung_id);
 
 -- Checkliste vor Ort (Wunsch Dario, 23.11.2026): alle Angaben als JSON, Fotos separat.
+-- Vertragsunterlagen der Liftfirmen (Wunsch Dario 23.11.2026): freiwillig, nur PDF,
+-- höchstens 3 pro Firma. Sehen kann sie nur die Firma selbst und die Verwaltung.
+CREATE TABLE IF NOT EXISTS firmen_dokumente (
+  id           SERIAL PRIMARY KEY,
+  konto_id     INTEGER NOT NULL REFERENCES konten(id) ON DELETE CASCADE,
+  dateiname    TEXT NOT NULL,
+  groesse      INTEGER NOT NULL,
+  inhalt       BYTEA NOT NULL,
+  erstellt_am  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS firmen_dokumente_konto ON firmen_dokumente (konto_id);
+
 CREATE TABLE IF NOT EXISTS beratung_checklisten (
   beratung_id       INTEGER PRIMARY KEY REFERENCES beratungen(id) ON DELETE CASCADE,
   daten             JSONB NOT NULL,

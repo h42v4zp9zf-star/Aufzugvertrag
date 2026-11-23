@@ -3,9 +3,19 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { DOKUMENTE_MAX_BYTES, dokumentTyp, sichererDateiname } from "@/lib/dokumente";
 import { hashPasswort, passwortFehler, pruefePasswort } from "@/lib/passwort";
 import { leseFormular } from "@/lib/preismodellForm";
-import { kontoAnlegen, kontoMitHashPerEmail, kontoStatusSetzen, preismodellSpeichern, type KontoStatus } from "@/lib/repo";
+import {
+  kontoAnlegen,
+  kontoMitHashPerEmail,
+  kontoStatusSetzen,
+  preismodellSpeichern,
+  UNTERLAGEN_MAX,
+  unterlageLoeschen,
+  unterlageSpeichern,
+  type KontoStatus,
+} from "@/lib/repo";
 import { kontoErforderlich, sitzungBeenden, sitzungStarten } from "@/lib/sitzung";
 
 export interface FormStatus {
@@ -72,5 +82,28 @@ export async function kontoStatusAendern(f: FormData): Promise<void> {
   const status = String(f.get("status")) as KontoStatus;
   if (!Number.isInteger(id) || !["pruefung", "aktiv", "gesperrt"].includes(status)) return;
   await kontoStatusSetzen(await db(), id, status);
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
+}
+
+// Vertragsunterlagen (Wunsch Dario 23.11.2026): freiwillig, nur PDF, bis 4 MB, höchstens 3.
+export async function unterlageHochladen(_: FormStatus, f: FormData): Promise<FormStatus> {
+  const konto = await kontoErforderlich();
+  if (konto.rolle !== "firma") return { fehler: ["Nur Liftfirmen können Unterlagen hochladen."] };
+  const datei = f.get("unterlage");
+  if (!datei || typeof datei === "string" || datei.size === 0) return { fehler: ["Bitte eine PDF-Datei auswählen."] };
+  if (datei.size > DOKUMENTE_MAX_BYTES) return { fehler: ["Die Datei ist zu gross. Bitte höchstens 4 MB."] };
+  const inhalt = Buffer.from(await datei.arrayBuffer());
+  if (dokumentTyp(inhalt) !== "application/pdf") return { fehler: ["Bitte nur PDF-Dateien hochladen."] };
+  const ergebnis = await unterlageSpeichern(await db(), konto.id, sichererDateiname(datei.name, "application/pdf"), inhalt);
+  if (ergebnis === "voll") return { fehler: [`Sie können höchstens ${UNTERLAGEN_MAX} Unterlagen hochladen. Bitte zuerst eine löschen.`] };
+  revalidatePath("/partner");
+  return { fehler: [], gespeichert: true };
+}
+
+export async function unterlageEntfernen(f: FormData): Promise<void> {
+  const konto = await kontoErforderlich();
+  const id = Number(f.get("id"));
+  if (!Number.isInteger(id) || id < 1) return;
+  await unterlageLoeschen(await db(), konto.id, id);
+  revalidatePath("/partner");
 }

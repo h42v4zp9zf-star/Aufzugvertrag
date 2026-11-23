@@ -72,6 +72,15 @@ export interface Preismodell {
   bewertung: number; // 1 bis 5
 }
 
+/** Bezeichnungen der Zuschläge, wie die Liftfirmen sie im Preisformular sehen. */
+export const ZUSCHLAG_TEXT: Record<keyof Preismodell["zuschlaege"], string> = {
+  proHaltestelleUeber4Chf: "Pro Haltestelle über 4",
+  hydraulikChf: "Hydraulikantrieb",
+  alterUeber25JahreChf: "Anlage älter als 25 Jahre",
+  brandfallsteuerungChf: "Brandfallsteuerung vorhanden",
+  proKabinenabschlusstuerChf: "Pro zusätzliche Kabinenabschlusstür",
+};
+
 export interface Angebot {
   firma: string;
   firmaId?: number;

@@ -72,6 +72,12 @@ export async function firmenNamen(d: Db): Promise<string[]> {
   return rows.map((r) => r.firma.slice(0, 80));
 }
 
+/** Ein Konto einer Liftfirma (nicht die Verwaltung), z. B. für die Detailseite in der Verwaltung. */
+export async function firmaLaden(d: Db, id: number): Promise<Konto | null> {
+  const { rows } = await d.query<Konto>(`SELECT ${KONTO_FELDER} FROM konten WHERE id = $1 AND rolle = 'firma'`, [id]);
+  return rows[0] ?? null;
+}
+
 export async function kontoStatusSetzen(d: Db, id: number, status: KontoStatus): Promise<void> {
   await d.query(`UPDATE konten SET status = $2 WHERE id = $1 AND rolle = 'firma'`, [id, status]);
 }
@@ -361,4 +367,48 @@ export async function anfragenListe(d: Db, kontoId?: number): Promise<Anfrage[]>
     [kontoId ?? null],
   );
   return rows;
+}
+
+// Vertragsunterlagen der Liftfirmen (Wunsch Dario 23.11.2026): freiwillig, nur PDF.
+export const UNTERLAGEN_MAX = 3;
+
+export interface Unterlage {
+  id: number;
+  dateiname: string;
+  groesse: number;
+  erstellt_am: Date;
+}
+
+export async function unterlagenListe(d: Db, kontoId: number): Promise<Unterlage[]> {
+  const { rows } = await d.query<Unterlage>(
+    "SELECT id, dateiname, groesse, erstellt_am FROM firmen_dokumente WHERE konto_id = $1 ORDER BY erstellt_am, id",
+    [kontoId],
+  );
+  return rows;
+}
+
+/** Speichert eine Unterlage. „voll“, wenn die Firma schon {@link UNTERLAGEN_MAX} Unterlagen hat. */
+export async function unterlageSpeichern(d: Db, kontoId: number, dateiname: string, inhalt: Buffer): Promise<"gespeichert" | "voll"> {
+  const { rows } = await d.query<{ id: number }>(
+    `INSERT INTO firmen_dokumente (konto_id, dateiname, groesse, inhalt)
+     SELECT $1, $2, $3, $4
+      WHERE (SELECT count(*) FROM firmen_dokumente WHERE konto_id = $1) < $5
+     RETURNING id`,
+    [kontoId, dateiname, inhalt.length, inhalt, UNTERLAGEN_MAX],
+  );
+  return rows.length > 0 ? "gespeichert" : "voll";
+}
+
+export async function unterlageLaden(d: Db, id: number): Promise<{ konto_id: number; dateiname: string; inhalt: Buffer } | null> {
+  const { rows } = await d.query<{ konto_id: number; dateiname: string; inhalt: Buffer }>(
+    "SELECT konto_id, dateiname, inhalt FROM firmen_dokumente WHERE id = $1",
+    [id],
+  );
+  return rows[0] ?? null;
+}
+
+/** Löscht eine Unterlage, aber nur, wenn sie zu dieser Firma gehört. */
+export async function unterlageLoeschen(d: Db, kontoId: number, id: number): Promise<boolean> {
+  const { rows } = await d.query<{ id: number }>("DELETE FROM firmen_dokumente WHERE id = $1 AND konto_id = $2 RETURNING id", [id, kontoId]);
+  return rows.length > 0;
 }
