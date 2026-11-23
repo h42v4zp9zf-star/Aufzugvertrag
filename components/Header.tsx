@@ -11,7 +11,7 @@ export function Header({ variant, step, rechts }: { variant: "overlay" | "bar"; 
     <header className={`header header--${variant}`}>
       <Link href="/" className="logo">
         {/* Logo von Dario (23.11.2026), für die helle Kopfzeile dunkel freigestellt. */}
-        <Image src="/logo/elevaris-logo.png" alt={MARKE} width={276} height={28} priority />
+        <Image src="/logo/elevaris-logo-v2.png" alt={MARKE} width={218} height={22} priority />
       </Link>
       {rechts ? (
         rechts
