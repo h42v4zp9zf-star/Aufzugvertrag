@@ -1,6 +1,8 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { BERATUNG_PREIS_CHF } from "@/lib/config";
 
 export default function Startseite() {
   return (
@@ -15,8 +17,14 @@ export default function Startseite() {
               passenden Wartungsvertrag wählen.
             </p>
           </div>
-          <div className="placeholder" aria-hidden="true">
-            Bild: Aufzugskabine in Schwarzweiss
+          <div className="hero__bild">
+            <Image
+              src="/bilder/aufzugsschacht.jpg"
+              alt="Gläserner Aufzugsschacht, von unten gesehen"
+              fill
+              priority
+              sizes="(max-width: 1088px) 100vw, 1040px"
+            />
           </div>
           <div className="btn-row">
             <Link href="/anlage" className="btn btn--dark btn--wide">
@@ -69,19 +77,25 @@ export default function Startseite() {
             <h2>Keine Anlagedaten zur Hand?</h2>
             <p className="lead">
               Unsere Fachperson kommt vorbei, erfasst die Anlage und erstellt Ihren Vergleich.
-              Anfangspauschale CHF 130, danach nach Aufwand.
+              Fixpreis CHF {BERATUNG_PREIS_CHF}, ohne Zusatzkosten. Termin direkt online wählen.
             </p>
           </div>
-          <div className="placeholder" aria-hidden="true">
-            Bild: Techniker im Maschinenraum
+          <div className="hero__bild">
+            <Image
+              src="/bilder/maschinenraum.jpg"
+              alt="Maschinenraum mit Aufzugsantrieb und Steuerschränken"
+              fill
+              style={{ objectPosition: "50% 58%" }}
+              sizes="(max-width: 688px) 100vw, 640px"
+            />
           </div>
           <div className="btn-row">
             <Link href="/beratung" className="btn btn--dark btn--wide">
               Beratung buchen
             </Link>
-            <a href="#ablauf" className="btn btn--outline btn--wide">
+            <Link href="/anlagedaten" className="btn btn--outline btn--wide">
               Mehr erfahren
-            </a>
+            </Link>
           </div>
         </section>
 

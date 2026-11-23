@@ -1,10 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Header } from "@/components/Header";
 import { toParams } from "@/lib/anlageParams";
+import { HerstellerWahl } from "./HerstellerWahl";
 import type { Antrieb, JaNeinUnbekannt } from "@/lib/pricing";
 
 const GEBAEUDETYPEN = ["Mehrfamilienhaus", "Büro", "Hotel", "Spital / Pflegeheim", "Industrie", "Gewerbe", "Mischnutzung", "Andere"];
@@ -14,7 +16,16 @@ const ANTRIEBE: { value: Antrieb; label: string }[] = [
   { value: "hydraulik", label: "Hydraulik" },
   { value: "unbekannt", label: "Unbekannt" },
 ];
-const HERSTELLER = ["unbekannt", "Schindler", "KONE", "TK Elevator", "Otis", "Emch", "AS Aufzüge", "Andere"];
+// Foto passend zum gewählten Antrieb (Fotos von Dario, 23.11.2026).
+const BILD: Record<Antrieb, { src: string; alt: string }> = {
+  seil: { src: "/bilder/antrieb-seil.jpg", alt: "Seilantrieb mit gelber Treibscheibe im Aufzugsschacht" },
+  hydraulik: { src: "/bilder/antrieb-hydraulik.jpg", alt: "Hydraulikaggregat mit roter Pumpe im Maschinenraum" },
+  unbekannt: { src: "/bilder/antrieb-unbekannt.jpg", alt: "Blick in einen Aufzugsschacht mit Antrieb und Seilen" },
+};
+const ATTIKA: { value: "ja" | "nein"; label: string }[] = [
+  { value: "ja", label: "Ja" },
+  { value: "nein", label: "Nein" },
+];
 const BRANDFALL: { value: JaNeinUnbekannt; label: string }[] = [
   { value: "ja", label: "Ja" },
   { value: "nein", label: "Nein" },
@@ -27,7 +38,7 @@ function Choices<T extends string>({
   onChange,
 }: {
   options: { value: T; label: string }[];
-  value: T;
+  value: T | null;
   onChange: (v: T) => void;
 }) {
   return (
@@ -54,9 +65,10 @@ export default function AnlageErfassen() {
   const [anzahl, setAnzahl] = useState("1");
   const [art, setArt] = useState(ARTEN[0]);
   const [antrieb, setAntrieb] = useState<Antrieb>("seil");
-  const [hersteller, setHersteller] = useState(HERSTELLER[0]);
+  const [hersteller, setHersteller] = useState("unbekannt");
   const [halte, setHalte] = useState("");
   const [brandfall, setBrandfall] = useState<JaNeinUnbekannt>("unbekannt");
+  const [attika, setAttika] = useState<"ja" | "nein" | null>(null);
   const [baujahr, setBaujahr] = useState("");
   const [tueren, setTueren] = useState("");
   const [traglast, setTraglast] = useState("");
@@ -72,6 +84,7 @@ export default function AnlageErfassen() {
     if (!/^\d{4}$/.test(plz.trim())) return setFehler("Bitte eine vierstellige Postleitzahl angeben.");
     if (!(Number(halte) >= 2)) return setFehler("Bitte die Anzahl Haltestellen angeben (mindestens 2).");
     if (!(Number(anzahl) >= 1)) return setFehler("Bitte die Anzahl Aufzüge angeben.");
+    if (!attika) return setFehler("Bitte angeben, ob eine Attika vorhanden ist.");
     setFehler(null);
     const params = toParams({
       gebaeudetyp,
@@ -82,6 +95,7 @@ export default function AnlageErfassen() {
       hersteller,
       haltestellen: Number(halte),
       brandfallsteuerung: brandfall,
+      attika,
       baujahr: opt(baujahr),
       kabinenabschlusstueren: opt(tueren),
       traglastKg: opt(traglast),
@@ -95,8 +109,19 @@ export default function AnlageErfassen() {
       <Header variant="bar" step="Schritt 1 von 2: Anlage erfassen" />
       <main className="config">
         <section className="config__visual" aria-label="Zusammenfassung">
-          <div className="placeholder" aria-hidden="true">
-            Bild: Aufzug passend zur gewählten Art
+          <div className="anlage-bild">
+            {ANTRIEBE.map(({ value }) => (
+              <Image
+                key={value}
+                src={BILD[value].src}
+                alt={value === antrieb ? BILD[value].alt : ""}
+                aria-hidden={value === antrieb ? undefined : true}
+                className={value === antrieb ? "sichtbar" : undefined}
+                fill
+                priority={value === "seil"}
+                sizes="(max-width: 960px) 100vw, 720px"
+              />
+            ))}
           </div>
           <div>
             <div className="config__title">{art}</div>
@@ -123,7 +148,9 @@ export default function AnlageErfassen() {
         <form className="config__form" onSubmit={absenden} noValidate>
           <div>
             <h1>Ihre Anlage</h1>
-            <p className="hint">Felder mit Stern sind Pflicht. Unbekanntes lassen Sie offen.</p>
+            <p className="hint">
+              Felder mit Stern sind Pflicht. Unbekanntes lassen Sie offen. <Link href="/anlagedaten">Wo finde ich diese Angaben?</Link>
+            </p>
           </div>
 
           <fieldset className="group">
@@ -162,17 +189,9 @@ export default function AnlageErfassen() {
 
           <fieldset className="group">
             <legend>Technik</legend>
-            <div className="grid2">
-              <label className="field">
-                Hersteller *
-                <select value={hersteller} onChange={(e) => setHersteller(e.target.value)}>
-                  {HERSTELLER.map((h) => (
-                    <option key={h} value={h}>
-                      {h === "unbekannt" ? "Unbekannt" : h}
-                    </option>
-                  ))}
-                </select>
-              </label>
+            {/* dense: Haltestellen rückt neben den Hersteller, die Suchliste darunter über die ganze Breite */}
+            <div className="grid2" style={{ gridAutoFlow: "row dense" }}>
+              <HerstellerWahl value={hersteller} onChange={setHersteller} />
               <label className="field">
                 Haltestellen *
                 <input type="number" min={2} placeholder="5" value={halte} onChange={(e) => { setHalte(e.target.value); setFehler(null); }} required />
@@ -201,6 +220,14 @@ export default function AnlageErfassen() {
             <div className="grid3">
               <Choices options={BRANDFALL} value={brandfall} onChange={setBrandfall} />
             </div>
+          </fieldset>
+
+          <fieldset className="group">
+            <legend>Attika vorhanden *</legend>
+            <div className="grid3">
+              <Choices options={ATTIKA} value={attika} onChange={setAttika} />
+            </div>
+            <p className="hint">Zurückversetztes oberstes Geschoss (Attikageschoss).</p>
           </fieldset>
 
           <fieldset className="group">

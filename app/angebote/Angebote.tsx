@@ -95,7 +95,7 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
       <div className="offers__head">
         <h1>Ihre Angebote</h1>
         <p className="lead">
-          {anlage.anzahlAufzuege} × {anlage.aufzugsart} · {anlage.haltestellen} Haltestellen · {herstellerText} · PLZ {anlage.plz}
+          {anlage.anzahlAufzuege} × {anlage.aufzugsart} · {anlage.haltestellen} Haltestellen{anlage.attika ? ` · ${anlage.attika === "ja" ? "mit" : "ohne"} Attika` : ""} · {herstellerText} · PLZ {anlage.plz}
         </p>
         <Link href="/anlage" className="link-muted">
           Angaben ändern

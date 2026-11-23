@@ -1,6 +1,8 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { MARKE } from "@/lib/config";
+import { HauptMenue } from "./HauptMenue";
 
 export { MARKE };
 
@@ -8,23 +10,15 @@ export function Header({ variant, step, rechts }: { variant: "overlay" | "bar"; 
   return (
     <header className={`header header--${variant}`}>
       <Link href="/" className="logo">
-        {MARKE}
+        {/* Logo von Dario (23.11.2026), für die helle Kopfzeile dunkel freigestellt. */}
+        <Image src="/logo/elevaris-logo-v2.png" alt={MARKE} width={218} height={22} priority />
       </Link>
       {rechts ? (
         rechts
       ) : step ? (
         <div className="step">{step}</div>
       ) : (
-        <>
-          <nav className="nav" aria-label="Hauptnavigation">
-            <a href="#ablauf">So funktioniert&apos;s</a>
-            <a href="#beratung">Beratung vor Ort</a>
-            <a href="#partner">Für Liftfirmen</a>
-          </nav>
-          <nav className="nav" aria-label="Konto">
-            <Link href="/partner/login">Partner-Login</Link>
-          </nav>
-        </>
+        <HauptMenue />
       )}
     </header>
   );

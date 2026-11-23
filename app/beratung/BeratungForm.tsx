@@ -1,19 +1,126 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useMemo, useState, useTransition } from "react";
+import { BERATUNG_PREIS_CHF } from "@/lib/config";
+import { DOKUMENT_TYPEN, DOKUMENTE_MAX_ANZAHL, DOKUMENTE_MAX_BYTES, groesseText } from "@/lib/dokumente";
+import { endzeit, istArbeitstag, kalenderTage, startzeiten, terminSchluessel, terminText, wochentag } from "@/lib/termine";
 import { beratungSenden } from "./actions";
 
-export function BeratungForm() {
-  const [fehler, setFehler] = useState<string | null>(null);
-  const [gesendet, setGesendet] = useState(false);
-  const [laeuft, starten] = useTransition();
+const KURZ = ["Mo", "Di", "Mi", "Do", "Fr"];
+const LANG = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
-  if (gesendet) {
+const tagKurz = (datum: string) => `${Number(datum.slice(8, 10))}.${Number(datum.slice(5, 7))}.`;
+const tagLang = (datum: string) => `${LANG[wochentag(datum)]}, ${tagKurz(datum)}`;
+
+/** Wochen von Montag bis Freitag; Tage vor dem ersten buchbaren Tag bleiben leer. */
+function wochen(tage: string[]): (string | null)[][] {
+  const reihen: (string | null)[][] = [];
+  let reihe: (string | null)[] | null = null;
+  for (const datum of tage) {
+    const w = wochentag(datum);
+    if (w === 0 || w === 6) continue;
+    if (!reihe || w === 1) {
+      reihe = [null, null, null, null, null];
+      reihen.push(reihe);
+    }
+    reihe[w - 1] = datum;
+  }
+  return reihen;
+}
+
+type Datei = { id: number; name: string; inhalt: Blob };
+let naechsteId = 1;
+
+const ERLAUBTE_ENDUNG = /\.(pdf|jpe?g|png)$/i;
+/** Fotos über 1 MB werden vor dem Hochladen verkleinert (längste Seite 2000 Pixel). */
+const FOTO_GRENZE = 1024 * 1024;
+const FOTO_PIXEL = 2000;
+
+/** Grosse Fotos (z. B. vom Handy) verkleinern, damit sie in die 4 MB passen. */
+async function vorbereiten(f: File): Promise<Datei> {
+  const original: Datei = { id: naechsteId++, name: f.name, inhalt: f };
+  if (!/^image\/(jpeg|png)$/.test(f.type) || f.size <= FOTO_GRENZE) return original;
+  try {
+    const bild = await createImageBitmap(f);
+    const faktor = Math.min(1, FOTO_PIXEL / Math.max(bild.width, bild.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bild.width * faktor);
+    canvas.height = Math.round(bild.height * faktor);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return original;
+    ctx.fillStyle = "#fff"; // transparente PNG-Flächen weiss statt schwarz
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bild, 0, 0, canvas.width, canvas.height);
+    bild.close();
+    const klein = await new Promise<Blob | null>((ok) => canvas.toBlob(ok, "image/jpeg", 0.85));
+    if (!klein || klein.size >= f.size) return original;
+    return { ...original, name: f.name.replace(/\.(jpe?g|png)$/i, "") + ".jpg", inhalt: klein };
+  } catch {
+    return original;
+  }
+}
+
+export function BeratungForm({ heute, belegt }: { heute: string; belegt: string[] }) {
+  const router = useRouter();
+  const [fehler, setFehler] = useState<string | null>(null);
+  const [gebucht, setGebucht] = useState<string | null>(null);
+  const [laeuft, starten] = useTransition();
+  const [datum, setDatum] = useState<string | null>(null);
+  const [zeit, setZeit] = useState<string | null>(null);
+  const [dateien, setDateien] = useState<Datei[]>([]);
+  const [dateiHinweis, setDateiHinweis] = useState<string | null>(null);
+  const [bereitet, setBereitet] = useState(false);
+
+  const zeiten = startzeiten();
+  const besetzt = useMemo(() => new Set(belegt), [belegt]);
+  const reihen = useMemo(() => wochen(kalenderTage(heute)), [heute]);
+  const frei = (d: string, z: string) => !besetzt.has(terminSchluessel(d, z));
+  const buchbar = (d: string) => istArbeitstag(d) && zeiten.some((z) => frei(d, z));
+  const summe = dateien.reduce((s, d) => s + d.inhalt.size, 0);
+  const voll = dateien.length >= DOKUMENTE_MAX_ANZAHL;
+
+  async function hinzufuegen(auswahl: File[]) {
+    setDateiHinweis(null);
+    setBereitet(true);
+    const liste = [...dateien];
+    const probleme: string[] = [];
+    for (const f of auswahl) {
+      if (liste.length >= DOKUMENTE_MAX_ANZAHL) {
+        probleme.push(`Höchstens ${DOKUMENTE_MAX_ANZAHL} Dokumente möglich.`);
+        break;
+      }
+      if (!DOKUMENT_TYPEN.includes(f.type as (typeof DOKUMENT_TYPEN)[number]) && !ERLAUBTE_ENDUNG.test(f.name)) {
+        probleme.push(`„${f.name}“: bitte nur PDF, JPG oder PNG.`);
+        continue;
+      }
+      const d = await vorbereiten(f);
+      if (liste.reduce((s, x) => s + x.inhalt.size, 0) + d.inhalt.size > DOKUMENTE_MAX_BYTES) {
+        probleme.push(`„${f.name}“ ist zu gross: zusammen sind höchstens 4 MB möglich.`);
+        continue;
+      }
+      liste.push(d);
+    }
+    setDateien(liste);
+    setDateiHinweis(probleme.length ? probleme.join(" ") : null);
+    setBereitet(false);
+  }
+
+  if (gebucht) {
     return (
       <div className="card" role="status">
         <h2>Danke für Ihre Buchung</h2>
-        <p className="muted">Wir melden uns in den nächsten Arbeitstagen bei Ihnen, um einen Termin vor Ort abzumachen.</p>
+        <p>
+          <strong>{gebucht}</strong>
+        </p>
+        {dateien.length > 0 && (
+          <p className="muted">{dateien.length === 1 ? "Ihr Dokument haben wir erhalten." : `Ihre ${dateien.length} Dokumente haben wir erhalten.`}</p>
+        )}
+        <p className="muted">
+          Unsere Fachperson kommt zur angegebenen Adresse. Falls etwas dazwischenkommt, melden wir uns telefonisch bei Ihnen. Kosten:
+          CHF {BERATUNG_PREIS_CHF} (Fixpreis), per Rechnung.
+        </p>
         <Link href="/" className="btn btn--outline">
           Zur Startseite
         </Link>
@@ -27,50 +134,194 @@ export function BeratungForm() {
       // Ohne action={...}, damit die Eingaben nach einem Fehler stehen bleiben.
       onSubmit={(e) => {
         e.preventDefault();
+        if (!datum || !zeit) {
+          setFehler("Bitte wählen Sie einen Termin.");
+          return;
+        }
         const daten = new FormData(e.currentTarget);
+        for (const d of dateien) daten.append("dokumente", d.inhalt, d.name);
         setFehler(null);
         starten(async () => {
-          const r = await beratungSenden(daten);
-          if (r.ok) setGesendet(true);
-          else setFehler(r.fehler);
+          let r;
+          try {
+            r = await beratungSenden(daten);
+          } catch {
+            setFehler("Die Buchung konnte nicht gesendet werden. Bitte versuchen Sie es noch einmal, allenfalls mit kleineren Dokumenten.");
+            return;
+          }
+          if (r.ok) {
+            setGebucht(terminText(datum, zeit));
+            return;
+          }
+          setFehler(r.fehler);
+          if (r.vergeben) {
+            // Jemand war schneller: belegte Zeiten neu laden und Auswahl zurücksetzen.
+            setZeit(null);
+            router.refresh();
+          }
         });
       }}
     >
-      <label className="field">
-        Name *
-        <input name="name" autoComplete="name" required />
-      </label>
-      <label className="field">
-        E-Mail *
-        <input name="email" type="email" autoComplete="email" required />
-      </label>
-      <label className="field">
-        Telefon *
-        <input name="telefon" type="tel" autoComplete="tel" required />
-      </label>
-      <label className="field">
-        Adresse der Liegenschaft *
-        <input name="adresse" autoComplete="street-address" placeholder="Strasse Nr., PLZ Ort" required />
-      </label>
-      <label className="field">
-        Anzahl Aufzüge
-        <input name="anzahl" inputMode="numeric" defaultValue="1" />
-      </label>
-      <label className="field">
-        Bemerkung oder Wunschtermin
-        <textarea name="bemerkung" rows={4} />
-      </label>
+      <fieldset className="group">
+        <legend>Termin wählen *</legend>
+        <p className="hint">Montag bis Freitag, 7 bis 17 Uhr. Ein Termin dauert etwa 1 Stunde.</p>
+        <div className="kalender">
+          <div className="kalender__reihe" aria-hidden="true">
+            {KURZ.map((k) => (
+              <span key={k} className="kalender__kopf">
+                {k}
+              </span>
+            ))}
+          </div>
+          {reihen.map((reihe, i) => (
+            <div key={i} className="kalender__reihe">
+              {reihe.map((d, j) =>
+                d ? (
+                  <button
+                    key={d}
+                    type="button"
+                    className="slot"
+                    aria-pressed={datum === d}
+                    aria-label={`${tagLang(d)}${buchbar(d) ? "" : ", nicht verfügbar"}`}
+                    disabled={!buchbar(d)}
+                    onClick={() => {
+                      setDatum(d);
+                      setZeit(null);
+                      setFehler(null);
+                    }}
+                  >
+                    {tagKurz(d)}
+                  </button>
+                ) : (
+                  <span key={j} />
+                ),
+              )}
+            </div>
+          ))}
+        </div>
+
+        {datum && (
+          <>
+            <p className="hint">Freie Zeiten am {tagLang(datum)}:</p>
+            <div className="zeiten">
+              {zeiten.map((z) => (
+                <button
+                  key={z}
+                  type="button"
+                  className="slot"
+                  aria-pressed={zeit === z}
+                  aria-label={`${z} bis ${endzeit(z)} Uhr${frei(datum, z) ? "" : ", bereits vergeben"}`}
+                  disabled={!frei(datum, z)}
+                  onClick={() => {
+                    setZeit(z);
+                    setFehler(null);
+                  }}
+                >
+                  {z}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+        {datum && zeit && <p className="banner banner--ok">Ihr Termin: {terminText(datum, zeit)}</p>}
+        <input type="hidden" name="termin_datum" value={datum ?? ""} />
+        <input type="hidden" name="termin_zeit" value={zeit ?? ""} />
+      </fieldset>
+
+      <fieldset className="group">
+        <legend>Ihre Angaben</legend>
+        <label className="field">
+          Name *
+          <input name="name" autoComplete="name" required />
+        </label>
+        <label className="field">
+          E-Mail *
+          <input name="email" type="email" autoComplete="email" required />
+        </label>
+        <label className="field">
+          Telefon *
+          <input name="telefon" type="tel" autoComplete="tel" required />
+        </label>
+        <label className="field">
+          Adresse der Liegenschaft *
+          <input name="adresse" autoComplete="street-address" placeholder="Strasse Nr., PLZ Ort" required />
+        </label>
+        <label className="field">
+          Anzahl Aufzüge
+          <input name="anzahl" inputMode="numeric" defaultValue="1" />
+        </label>
+        <label className="field">
+          Bemerkung
+          <textarea name="bemerkung" rows={3} placeholder="z. B. Zugang über den Hintereingang" />
+        </label>
+      </fieldset>
+
+      <fieldset className="group">
+        <legend>Dokumente (freiwillig)</legend>
+        <p className="hint">
+          Zum Beispiel bisheriger Wartungsvertrag oder Offerte. PDF, JPG oder PNG, bis {DOKUMENTE_MAX_ANZAHL} Dateien, zusammen höchstens 4 MB.
+        </p>
+        {dateien.length > 0 && (
+          <ul className="dateien">
+            {dateien.map((d) => (
+              <li key={d.id}>
+                <span className="dateien__name">{d.name}</span>
+                <span className="dateien__groesse">{groesseText(d.inhalt.size)}</span>
+                <button
+                  type="button"
+                  className="linkbtn"
+                  aria-label={`${d.name} entfernen`}
+                  onClick={() => {
+                    setDateien(dateien.filter((x) => x.id !== d.id));
+                    setDateiHinweis(null);
+                  }}
+                >
+                  Entfernen
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {!voll && (
+          <label className={`btn btn--outline datei-knopf${bereitet ? " datei-knopf--aus" : ""}`}>
+            {bereitet ? "Wird vorbereitet …" : dateien.length ? "Weiteres Dokument hinzufügen" : "Dokument auswählen"}
+            <input
+              type="file"
+              className="sr-only"
+              accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+              multiple
+              disabled={bereitet}
+              onChange={(e) => {
+                const auswahl = Array.from(e.currentTarget.files ?? []);
+                e.currentTarget.value = ""; // dieselbe Datei kann erneut gewählt werden
+                if (auswahl.length) void hinzufuegen(auswahl);
+              }}
+            />
+          </label>
+        )}
+        {dateien.length > 0 && (
+          <p className="hint">
+            {dateien.length} von {DOKUMENTE_MAX_ANZAHL} Dateien, {groesseText(summe)} von 4 MB
+          </p>
+        )}
+        {dateiHinweis && (
+          <p className="error" role="alert">
+            {dateiHinweis}
+          </p>
+        )}
+      </fieldset>
+
       <label className="check">
         <input type="checkbox" name="pauschale" required />
-        Ich nehme zur Kenntnis: Anfangspauschale CHF 130, danach Abrechnung nach Aufwand, per Rechnung.
+        Ich nehme zur Kenntnis: Die Beratung vor Ort kostet CHF {BERATUNG_PREIS_CHF} (Fixpreis, ohne Zusatzkosten), zahlbar per Rechnung.
       </label>
       {fehler && (
         <p className="error" role="alert">
           {fehler}
         </p>
       )}
-      <button type="submit" className="btn btn--dark" disabled={laeuft}>
-        {laeuft ? "Wird gesendet …" : "Beratung verbindlich buchen"}
+      <button type="submit" className="btn btn--dark" disabled={laeuft || bereitet}>
+        {laeuft ? "Wird gesendet …" : "Termin verbindlich buchen"}
       </button>
     </form>
   );
