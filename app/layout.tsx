@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { HAUPT_DOMAIN, MARKE } from "@/lib/config";
 import "./globals.css";
 
@@ -9,7 +9,12 @@ export const metadata: Metadata = {
   title: `${MARKE} – Aufzugswartung fair verglichen`,
   description:
     "Anlage erfassen, feste Angebote von Schweizer Liftfirmen vergleichen und den passenden Wartungsvertrag wählen.",
+  applicationName: MARKE,
+  // iPhone: Name und Verhalten, wenn die Seite auf dem Home-Bildschirm liegt.
+  appleWebApp: { title: MARKE, capable: true, statusBarStyle: "default" },
 };
+
+export const viewport: Viewport = { themeColor: "#ffffff" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
