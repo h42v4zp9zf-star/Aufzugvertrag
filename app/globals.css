@@ -249,3 +249,58 @@ td.right, th.right { text-align: right; }
 @media (max-width: 360px) {
   .logo img { height: 18px; }
 }
+
+/* Checkliste Beratung vor Ort (Verwaltung) */
+.checkliste { max-width: 760px; gap: 24px; padding-bottom: 120px; }
+.checkliste h3 { font-size: 16px; font-weight: 500; margin-top: 8px; }
+.checkliste__kopf { display: flex; flex-direction: column; gap: 8px; }
+.checkliste__kopf .link-muted { text-align: left; align-self: flex-start; }
+.checkliste__plus { align-self: flex-start; }
+.field--breit { grid-column: 1 / -1; }
+.wahl { display: flex; flex-wrap: wrap; gap: 8px; }
+.wahl .choice { flex: 0 1 auto; }
+.angaben { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; margin: 0; }
+.angaben div { min-width: 0; }
+.angaben dt { font-size: 13px; color: var(--muted); }
+.angaben dd { margin: 2px 0 0; font-size: 15px; overflow-wrap: anywhere; }
+.angaben a { text-decoration: underline; text-underline-offset: 2px; }
+.zustand { display: flex; flex-direction: column; gap: 16px; }
+.zustand__punkt { display: flex; flex-direction: column; gap: 8px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.fotostellen { display: flex; flex-direction: column; border: 1px solid var(--field); border-radius: var(--radius); }
+.fotostelle { display: flex; flex-direction: column; gap: 12px; padding: 12px; }
+.fotostelle + .fotostelle { border-top: 1px solid var(--line); }
+.fotostelle__name { font-size: 14px; }
+.fotos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+.foto { position: relative; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.foto img, .foto__fehlt { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radius); background: #f2f2f2; }
+.foto__fehlt { display: flex; align-items: center; justify-content: center; padding: 8px; text-align: center; color: var(--muted); }
+.foto__wartet { position: absolute; top: 6px; left: 6px; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: rgba(23, 26, 32, .8); color: #fff; }
+.foto input { min-height: 36px; padding: 0 10px; border: 1px solid var(--field); border-radius: var(--radius); font-size: 13px; width: 100%; }
+.foto .linkbtn { align-self: flex-start; font-size: 13px; }
+.check { display: flex; align-items: center; gap: 10px; min-height: 40px; font-size: 15px; }
+.check input { width: 20px; height: 20px; accent-color: var(--ink); }
+.unterschrift-feld { display: flex; flex-direction: column; gap: 8px; }
+.unterschrift { width: 100%; height: 180px; border: 1px dashed var(--field); border-radius: var(--radius); background: #fff; touch-action: none; }
+.unterschrift--bild { object-fit: contain; border-style: solid; }
+.abschluss { display: flex; flex-direction: column; gap: 12px; padding-top: 8px; border-top: 1px solid var(--line); }
+.abschluss ul { margin: 6px 0 0 18px; }
+.speicherstand { position: sticky; bottom: 0; margin: 0 -24px; padding: 12px 24px calc(12px + env(safe-area-inset-bottom)); background: var(--white); border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); z-index: 5; }
+.speicherstand--offline, .speicherstand--fehler, .speicherstand--anmelden { background: #171a20; color: #fff; }
+.speicherstand a { color: inherit; text-decoration: underline; }
+.btn-row--start a.btn { text-decoration: none; }
+@media (max-width: 600px) {
+  .angaben { grid-template-columns: minmax(0, 1fr); }
+  .checkliste .card { padding: 18px; }
+  .speicherstand { margin: 0 -20px; padding-left: 20px; padding-right: 20px; }
+}
+
+/* Filter über den Tabellen der Verwaltung */
+.filter { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.filter .field { flex: 0 1 200px; min-width: 0; }
+.filter .filter__suche { flex: 1 1 260px; }
+.checkliste-links { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 10px; }
+.checkliste-links .btn { text-decoration: none; }
+@media (max-width: 600px) {
+  .filter .field { flex: 1 1 140px; }
+}
+.bericht-link { text-decoration: underline; font-size: 14px; white-space: nowrap; }

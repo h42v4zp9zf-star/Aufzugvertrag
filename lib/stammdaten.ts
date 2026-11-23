@@ -1,5 +1,9 @@
 // Auswahllisten, die Kundenformular und Liftfirmen-Portal gemeinsam nutzen.
 
+/** Gebäudetypen und Aufzugsarten im Formular „Ihre Anlage“ und in der Checkliste vor Ort. */
+export const GEBAEUDETYPEN = ["Mehrfamilienhaus", "Büro", "Hotel", "Spital / Pflegeheim", "Industrie", "Gewerbe", "Mischnutzung", "Andere"];
+export const AUFZUGSARTEN = ["Personenaufzug", "Lastenaufzug", "Personen- und Lastenaufzug", "Plattformlift"];
+
 /** Die 6 grossen Hersteller mit den meisten Anlagen in der Schweiz (direkt wählbar). */
 export const HERSTELLER_HAUPT = ["Schindler", "KONE", "TK Elevator", "Otis", "Emch", "AS Aufzüge"];
 

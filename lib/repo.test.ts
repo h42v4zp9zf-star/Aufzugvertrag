@@ -12,7 +12,15 @@ import {
   beratungAnlegen,
   beratungenListe,
   belegteTermine,
+  beratungLaden,
+  checklisteLaden,
+  checklisteSpeichern,
   dokumentLaden,
+  fotoIds,
+  fotoLaden,
+  fotoSpeichern,
+  vorschauBilder,
+  firmenNamen,
   kontoAnlegen,
   kontoMitHashPerEmail,
   kontoPerSitzung,
@@ -24,6 +32,7 @@ import {
   TerminVergeben,
 } from "./repo.ts";
 import type { Anlage, PreismodellDaten } from "./pricing.ts";
+import { FOTOS_MAX, leereCheckliste, type ChecklisteDaten } from "./checkliste.ts";
 
 const url = process.env.TEST_DATABASE_URL;
 const skip = url ? false : "TEST_DATABASE_URL nicht gesetzt";
@@ -193,4 +202,68 @@ test("Dokumente: werden mit der Buchung gespeichert, nur bei erfolgreicher Buchu
   // Ohne Dokumente: leere Liste.
   const ohne = await beratungAnlegen(d, { ...kunde, termin: { datum: "2026-11-26", zeit: "11:00" } });
   assert.deepEqual((await beratungenListe(d)).find((x) => x.id === ohne)?.dokumente, []);
+});
+
+test("Firmennamen für die Hersteller-Liste: ohne Verwaltung und ohne gesperrte", { skip }, async () => {
+  const a = await kontoAnlegen(d, { firma: "Zeta Lift AG", uid: "CHE-111.111.111", email: "zeta@example.ch", passwortHash: "x" });
+  const b = await kontoAnlegen(d, { firma: "Gesperrt Lift GmbH", uid: "CHE-222.222.222", email: "gesperrt@example.ch", passwortHash: "x" });
+  await kontoStatusSetzen(d, b.id, "gesperrt");
+  const namen = await firmenNamen(d);
+  assert.ok(namen.includes("Zeta Lift AG"), "auch ohne Freischaltung");
+  assert.ok(!namen.includes("Gesperrt Lift GmbH"));
+  assert.ok(!namen.includes("Verwaltung"));
+  assert.ok(a.id > 0);
+});
+
+test("Checkliste vor Ort: speichern, abschliessen, Fotos (doppelt, gelöscht, höchstens 30)", { skip }, async () => {
+  const id = await beratungAnlegen(d, {
+    name: "Checkliste Kunde",
+    email: "check@example.ch",
+    telefon: "079 000 00 00",
+    adresse: "Seestrasse 12, 8004 Zürich",
+    anzahlAufzuege: 2,
+    bemerkung: "",
+    termin: { datum: "2026-12-02", zeit: "09:00" },
+  });
+  assert.equal((await beratungLaden(d, id))?.checkliste, null, "noch nicht angefangen");
+  assert.equal(await checklisteLaden(d, id), null);
+
+  const jpg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]);
+  const klein = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 9]);
+  assert.equal(await fotoSpeichern(d, id, "f1", jpg, klein), "gespeichert");
+  assert.equal(await fotoSpeichern(d, id, "f1", jpg, klein), "schon-da", "nach Unterbruch doppelt gesendet");
+  assert.equal(await fotoSpeichern(d, id, "f2", jpg, klein), "gespeichert");
+
+  const daten: ChecklisteDaten = leereCheckliste(2, "Checkliste Kunde");
+  daten.aufzuege[0].antrieb = "seil";
+  daten.fotos = [{ id: "f1", aufzug: "a1", stelle: "grube", notiz: "trocken" }];
+  await checklisteSpeichern(d, id, daten);
+  assert.deepEqual(await fotoIds(d, id), ["f1"], "f2 steht nicht mehr in der Liste und ist gelöscht");
+  assert.deepEqual(await fotoLaden(d, id, "f1", false), jpg);
+  assert.deepEqual(await fotoLaden(d, id, "f1", true), klein);
+  assert.equal(await fotoLaden(d, id, "f2", true), null);
+  assert.deepEqual([...(await vorschauBilder(d, id)).keys()], ["f1"]);
+
+  let stand = await checklisteLaden(d, id);
+  assert.equal(stand?.daten.fotos[0].notiz, "trocken");
+  assert.equal(stand?.abgeschlossen_am, null);
+  assert.equal((await beratungenListe(d)).find((b) => b.id === id)?.checkliste, "angefangen");
+
+  daten.abschluss.abgeschlossenAm = "2026-12-02T09:45:00.000Z";
+  await checklisteSpeichern(d, id, daten);
+  stand = await checklisteLaden(d, id);
+  const erstesMal = stand?.abgeschlossen_am;
+  assert.ok(erstesMal instanceof Date);
+  await checklisteSpeichern(d, id, daten);
+  assert.deepEqual((await checklisteLaden(d, id))?.abgeschlossen_am, erstesMal, "Zeitpunkt bleibt beim erneuten Speichern");
+  assert.equal((await beratungLaden(d, id))?.checkliste, "abgeschlossen");
+
+  daten.abschluss.abgeschlossenAm = "";
+  await checklisteSpeichern(d, id, daten);
+  assert.equal((await checklisteLaden(d, id))?.abgeschlossen_am, null, "wieder bearbeiten");
+
+  // Höchstens 30 Fotos pro Beratung
+  for (let i = 0; i < FOTOS_MAX - 1; i++) assert.equal(await fotoSpeichern(d, id, `x${i}`, jpg, klein), "gespeichert");
+  assert.equal(await fotoSpeichern(d, id, "zuviel", jpg, klein), "voll");
+  assert.equal((await fotoIds(d, id)).length, FOTOS_MAX);
 });
