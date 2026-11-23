@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
@@ -14,6 +15,12 @@ const ANTRIEBE: { value: Antrieb; label: string }[] = [
   { value: "hydraulik", label: "Hydraulik" },
   { value: "unbekannt", label: "Unbekannt" },
 ];
+// Foto passend zum gewählten Antrieb (Fotos von Dario, 23.11.2026).
+const BILD: Record<Antrieb, { src: string; alt: string }> = {
+  seil: { src: "/bilder/antrieb-seil.jpg", alt: "Seilantrieb mit gelber Treibscheibe im Aufzugsschacht" },
+  hydraulik: { src: "/bilder/antrieb-hydraulik.jpg", alt: "Hydraulikaggregat mit roter Pumpe im Maschinenraum" },
+  unbekannt: { src: "/bilder/antrieb-unbekannt.jpg", alt: "Blick in einen Aufzugsschacht mit Antrieb und Seilen" },
+};
 const HERSTELLER = ["unbekannt", "Schindler", "KONE", "TK Elevator", "Otis", "Emch", "AS Aufzüge", "Andere"];
 const BRANDFALL: { value: JaNeinUnbekannt; label: string }[] = [
   { value: "ja", label: "Ja" },
@@ -95,8 +102,19 @@ export default function AnlageErfassen() {
       <Header variant="bar" step="Schritt 1 von 2: Anlage erfassen" />
       <main className="config">
         <section className="config__visual" aria-label="Zusammenfassung">
-          <div className="placeholder" aria-hidden="true">
-            Bild: Aufzug passend zur gewählten Art
+          <div className="anlage-bild">
+            {ANTRIEBE.map(({ value }) => (
+              <Image
+                key={value}
+                src={BILD[value].src}
+                alt={value === antrieb ? BILD[value].alt : ""}
+                aria-hidden={value === antrieb ? undefined : true}
+                className={value === antrieb ? "sichtbar" : undefined}
+                fill
+                priority={value === "seil"}
+                sizes="(max-width: 960px) 100vw, 720px"
+              />
+            ))}
           </div>
           <div>
             <div className="config__title">{art}</div>

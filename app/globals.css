@@ -84,6 +84,10 @@ h1, h2, h3, p { margin: 0; }
 /* Konfigurator */
 .config { display: flex; flex-wrap: wrap; align-items: stretch; }
 .config__visual { flex: 999 1 520px; min-width: 0; min-height: 560px; background: var(--white); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 32px; padding: 64px 24px; text-align: center; }
+.anlage-bild { position: relative; width: min(100%, 720px); aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; background: var(--line); }
+.anlage-bild img { object-fit: cover; opacity: 0; transition: opacity .35s ease; }
+.anlage-bild img.sichtbar { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .anlage-bild img { transition: none; } }
 .config__title { font-size: 28px; font-weight: 500; }
 .config__stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; width: 100%; max-width: 520px; }
 .config__stats strong { display: block; font-size: clamp(17px, 5vw, 24px); font-weight: 500; overflow-wrap: anywhere; }
