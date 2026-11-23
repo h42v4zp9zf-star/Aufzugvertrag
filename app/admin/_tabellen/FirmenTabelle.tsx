@@ -1,23 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
-import { kontoStatusAendern } from "@/app/partner/actions";
-import type { Konto, KontoStatus } from "@/lib/repo";
+import type { Konto } from "@/lib/repo";
 import { Auswahl, FilterZeile, KeineTreffer, Suche, alphabetisch, passt, zeit } from "./Filter";
-
-const STATUS_TEXT: Record<KontoStatus, string> = { pruefung: "In Prüfung", aktiv: "Freigeschaltet", gesperrt: "Gesperrt" };
-
-function StatusKnopf({ id, status, label, dunkel = false }: { id: number; status: KontoStatus; label: string; dunkel?: boolean }) {
-  return (
-    <form action={kontoStatusAendern} className="inline-form">
-      <input type="hidden" name="id" value={id} />
-      <input type="hidden" name="status" value={status} />
-      <button type="submit" className={`btn btn--small ${dunkel ? "btn--dark" : "btn--outline"}`}>
-        {label}
-      </button>
-    </form>
-  );
-}
+import { STATUS_TEXT, StatusKnopf } from "./StatusKnopf";
 
 export function FirmenTabelle({ konten }: { konten: Konto[] }) {
   const [suche, setSuche] = useState("");
@@ -87,13 +74,20 @@ export function FirmenTabelle({ konten }: { konten: Konto[] }) {
             <tbody>
               {liste.map((k) => (
                 <tr key={k.id}>
-                  <td>{k.firma}</td>
+                  <td>
+                    <Link href={`/admin/firma/${k.id}`} className="tabelle-link">
+                      {k.firma}
+                    </Link>
+                  </td>
                   <td>{k.uid}</td>
                   <td>{k.email}</td>
                   <td>
                     <span className={`pill${k.status === "aktiv" ? " pill--aktiv" : ""}`}>{STATUS_TEXT[k.status]}</span>
                   </td>
                   <td className="right" style={{ whiteSpace: "nowrap" }}>
+                    <Link href={`/admin/firma/${k.id}`} className="btn btn--small btn--outline">
+                      Ansehen
+                    </Link>{" "}
                     {k.status !== "aktiv" && <StatusKnopf id={k.id} status="aktiv" label="Freischalten" dunkel />}{" "}
                     {k.status !== "gesperrt" && <StatusKnopf id={k.id} status="gesperrt" label="Sperren" />}
                   </td>

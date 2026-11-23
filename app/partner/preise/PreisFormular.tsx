@@ -1,7 +1,7 @@
 "use client";
 
 import { startTransition, useActionState, useState } from "react";
-import { chf, PIKETT, PIKETT_STANDARD, PIKETT_TEXT, preisProAufzug, STUFEN, WARTUNGEN_PRO_STUFE, type Anlage, type Pikett, type Preismodell, type PreismodellDaten, type Stufe } from "@/lib/pricing";
+import { chf, PIKETT, PIKETT_STANDARD, PIKETT_TEXT, preisProAufzug, STUFEN, WARTUNGEN_PRO_STUFE, ZUSCHLAG_TEXT, type Anlage, type Pikett, type Preismodell, type PreismodellDaten, type Stufe } from "@/lib/pricing";
 import { HERSTELLER, PLZ_KREISE, STUFEN_NAMEN } from "@/lib/stammdaten";
 import { preiseSpeichern, type FormStatus } from "../actions";
 import { Fehlerliste } from "../Formulare";
@@ -9,13 +9,15 @@ import { Fehlerliste } from "../Formulare";
 type PaketWerte = { an: boolean; grundpreis: string; reaktion: string; pikett: Pikett };
 type Zuschlag = "z_halte" | "z_hydraulik" | "z_alter" | "z_brandfall" | "z_tuer";
 
-const ZUSCHLAEGE: { key: Zuschlag; label: string; feld: keyof PreismodellDaten["zuschlaege"] }[] = [
-  { key: "z_halte", label: "Pro Haltestelle über 4", feld: "proHaltestelleUeber4Chf" },
-  { key: "z_hydraulik", label: "Hydraulikantrieb", feld: "hydraulikChf" },
-  { key: "z_alter", label: "Anlage älter als 25 Jahre", feld: "alterUeber25JahreChf" },
-  { key: "z_brandfall", label: "Brandfallsteuerung vorhanden", feld: "brandfallsteuerungChf" },
-  { key: "z_tuer", label: "Pro zusätzliche Kabinenabschlusstür", feld: "proKabinenabschlusstuerChf" },
-];
+const ZUSCHLAEGE: { key: Zuschlag; label: string; feld: keyof PreismodellDaten["zuschlaege"] }[] = (
+  [
+    ["z_halte", "proHaltestelleUeber4Chf"],
+    ["z_hydraulik", "hydraulikChf"],
+    ["z_alter", "alterUeber25JahreChf"],
+    ["z_brandfall", "brandfallsteuerungChf"],
+    ["z_tuer", "proKabinenabschlusstuerChf"],
+  ] as const
+).map(([key, feld]) => ({ key, feld, label: ZUSCHLAG_TEXT[feld] }));
 
 // Beispielanlage für die Vorschau.
 const BEISPIEL: Anlage = {

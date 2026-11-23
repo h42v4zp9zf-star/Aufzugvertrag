@@ -30,6 +30,12 @@ import {
   sitzungAnlegen,
   sitzungLoeschen,
   TerminVergeben,
+  firmaLaden,
+  UNTERLAGEN_MAX,
+  unterlageLaden,
+  unterlageLoeschen,
+  unterlagenListe,
+  unterlageSpeichern,
 } from "./repo.ts";
 import type { Anlage, PreismodellDaten } from "./pricing.ts";
 import { FOTOS_MAX, leereCheckliste, type ChecklisteDaten } from "./checkliste.ts";
@@ -266,4 +272,31 @@ test("Checkliste vor Ort: speichern, abschliessen, Fotos (doppelt, gelöscht, h�
   for (let i = 0; i < FOTOS_MAX - 1; i++) assert.equal(await fotoSpeichern(d, id, `x${i}`, jpg, klein), "gespeichert");
   assert.equal(await fotoSpeichern(d, id, "zuviel", jpg, klein), "voll");
   assert.equal((await fotoIds(d, id)).length, FOTOS_MAX);
+});
+
+test("Vertragsunterlagen der Liftfirmen: höchstens 3, nur die eigenen löschen", { skip }, async () => {
+  const a = await kontoAnlegen(d, { firma: "Unterlagen AG", uid: "CHE-111.222.333", email: "unterlagen-a@example.ch", passwortHash: "x" });
+  const b = await kontoAnlegen(d, { firma: "Andere AG", uid: "CHE-444.555.666", email: "unterlagen-b@example.ch", passwortHash: "x" });
+  const pdf = Buffer.from("%PDF-1.4 Testvertrag");
+
+  assert.equal((await firmaLaden(d, a.id))?.firma, "Unterlagen AG");
+  const admin = await kontoMitHashPerEmail(d, "chef@example.ch");
+  if (admin) assert.equal(await firmaLaden(d, admin.id), null, "Verwaltung ist keine Liftfirma");
+
+  for (let i = 0; i < UNTERLAGEN_MAX; i++) assert.equal(await unterlageSpeichern(d, a.id, `Vertrag ${i}.pdf`, pdf), "gespeichert");
+  assert.equal(await unterlageSpeichern(d, a.id, "zuviel.pdf", pdf), "voll");
+  const liste = await unterlagenListe(d, a.id);
+  assert.deepEqual(liste.map((u) => u.dateiname), ["Vertrag 0.pdf", "Vertrag 1.pdf", "Vertrag 2.pdf"]);
+  assert.equal(liste[0].groesse, pdf.length);
+
+  const geladen = await unterlageLaden(d, liste[0].id);
+  assert.equal(geladen?.konto_id, a.id);
+  assert.ok(geladen?.inhalt.equals(pdf));
+
+  // Eine andere Firma kann fremde Unterlagen nicht löschen.
+  assert.equal(await unterlageLoeschen(d, b.id, liste[0].id), false);
+  assert.equal(await unterlageLoeschen(d, a.id, liste[0].id), true);
+  assert.equal((await unterlagenListe(d, a.id)).length, UNTERLAGEN_MAX - 1);
+  assert.equal(await unterlageSpeichern(d, a.id, "neu.pdf", pdf), "gespeichert");
+  assert.equal((await unterlagenListe(d, b.id)).length, 0);
 });

@@ -3,8 +3,9 @@ import { redirect } from "next/navigation";
 import { AnfragenTabelle } from "@/components/AnfragenTabelle";
 import { PortalHeader } from "@/components/PortalHeader";
 import { db, dbKonfiguriert } from "@/lib/db";
-import { anfragenListe, preismodellLaden } from "@/lib/repo";
+import { anfragenListe, preismodellLaden, UNTERLAGEN_MAX, unterlagenListe } from "@/lib/repo";
 import { kontoErforderlich } from "@/lib/sitzung";
+import { Unterlagen } from "./Unterlagen";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ export default async function PartnerUebersicht() {
   const konto = await kontoErforderlich();
   if (konto.rolle === "admin") redirect("/admin");
   const d = await db();
-  const [modell, anfragen] = await Promise.all([preismodellLaden(d, konto.id), anfragenListe(d, konto.id)]);
+  const [modell, anfragen, unterlagen] = await Promise.all([preismodellLaden(d, konto.id), anfragenListe(d, konto.id), unterlagenListe(d, konto.id)]);
 
   let hinweis: string;
   if (konto.status === "pruefung") {
@@ -47,6 +48,23 @@ export default async function PartnerUebersicht() {
               ? `Zuletzt geändert am ${new Date(modell.geaendert_am).toLocaleDateString("de-CH")}. ${modell.daten.pakete.length} Paket(e) erfasst.`
               : "Noch keine Preise erfasst."}
           </p>
+        </section>
+
+        <section className="card">
+          <h2>Vertragsunterlagen</h2>
+          <p className="muted">
+            Freiwillig: Laden Sie hier Ihren Wartungsvertrag oder Ihre AGB als PDF hoch, höchstens {UNTERLAGEN_MAX} Dateien. Die Unterlagen sieht
+            nur die Verwaltung von Elevaris, Kunden sehen sie nicht.
+          </p>
+          <Unterlagen
+            max={UNTERLAGEN_MAX}
+            liste={unterlagen.map((u) => ({
+              id: u.id,
+              dateiname: u.dateiname,
+              groesse: u.groesse,
+              datum: new Date(u.erstellt_am).toLocaleDateString("de-CH", { timeZone: "Europe/Zurich" }),
+            }))}
+          />
         </section>
 
         <section className="card">
