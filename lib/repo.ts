@@ -60,6 +60,17 @@ export async function kontenListe(d: Db): Promise<Konto[]> {
   return rows;
 }
 
+/** Namen der registrierten Liftfirmen für die Hersteller-Liste (Wunsch Dario 23.11.2026:
+ *  sofort nach der Registrierung, nicht erst nach Freischaltung; gesperrte nicht). */
+export async function firmenNamen(d: Db): Promise<string[]> {
+  const { rows } = await d.query<{ firma: string }>(
+    `SELECT DISTINCT trim(firma) AS firma FROM konten
+      WHERE rolle = 'firma' AND status <> 'gesperrt' AND trim(firma) <> ''
+      ORDER BY 1`,
+  );
+  return rows.map((r) => r.firma.slice(0, 80));
+}
+
 export async function kontoStatusSetzen(d: Db, id: number, status: KontoStatus): Promise<void> {
   await d.query(`UPDATE konten SET status = $2 WHERE id = $1 AND rolle = 'firma'`, [id, status]);
 }

@@ -13,6 +13,7 @@ import {
   beratungenListe,
   belegteTermine,
   dokumentLaden,
+  firmenNamen,
   kontoAnlegen,
   kontoMitHashPerEmail,
   kontoPerSitzung,
@@ -193,4 +194,15 @@ test("Dokumente: werden mit der Buchung gespeichert, nur bei erfolgreicher Buchu
   // Ohne Dokumente: leere Liste.
   const ohne = await beratungAnlegen(d, { ...kunde, termin: { datum: "2026-11-26", zeit: "11:00" } });
   assert.deepEqual((await beratungenListe(d)).find((x) => x.id === ohne)?.dokumente, []);
+});
+
+test("Firmennamen für die Hersteller-Liste: ohne Verwaltung und ohne gesperrte", { skip }, async () => {
+  const a = await kontoAnlegen(d, { firma: "Zeta Lift AG", uid: "CHE-111.111.111", email: "zeta@example.ch", passwortHash: "x" });
+  const b = await kontoAnlegen(d, { firma: "Gesperrt Lift GmbH", uid: "CHE-222.222.222", email: "gesperrt@example.ch", passwortHash: "x" });
+  await kontoStatusSetzen(d, b.id, "gesperrt");
+  const namen = await firmenNamen(d);
+  assert.ok(namen.includes("Zeta Lift AG"), "auch ohne Freischaltung");
+  assert.ok(!namen.includes("Gesperrt Lift GmbH"));
+  assert.ok(!namen.includes("Verwaltung"));
+  assert.ok(a.id > 0);
 });
