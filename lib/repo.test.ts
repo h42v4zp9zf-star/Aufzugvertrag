@@ -40,6 +40,8 @@ import {
   unterlageLoeschen,
   unterlagenListe,
   unterlageSpeichern,
+  wartelisteEintragen,
+  wartelisteLaden,
 } from "./repo.ts";
 import type { Anlage, PreismodellDaten } from "./pricing.ts";
 import { FOTOS_MAX, leereCheckliste, type ChecklisteDaten } from "./checkliste.ts";
@@ -344,4 +346,60 @@ test("Passwort vergessen: Link gilt einmal, macht ältere ungültig und beendet 
   await d.query("UPDATE passwort_links SET gueltig_bis = now() - interval '1 minute' WHERE konto_id = $1", [k.id]);
   assert.equal(await kontoPerPasswortLink(d, tokenHash("link-alt")), null);
   assert.equal(await passwortZuruecksetzen(d, tokenHash("link-alt"), "neu-4"), null);
+});
+
+test("Rechnungsangaben: Firma und Rechnungsadresse bei Anfrage und Beratung", { skip }, async () => {
+  const k = await kontoAnlegen(d, { firma: "Rechnung AG", uid: "CHE-222.333.444", email: "rechnung@example.ch", passwortHash: "x" });
+  await anfrageAnlegen(d, {
+    kontoId: k.id,
+    stufe: "basis",
+    preisChf: 1200,
+    anlage: ANLAGE,
+    name: "Ida Muster",
+    email: "ida@example.com",
+    telefon: "079 333 33 33",
+    adresse: "Langstrasse 1, 8004 Zürich",
+    firma: "Verwaltung Muster AG",
+    rechnungsadresse: "Muster AG\nPostfach\n8001 Zürich",
+  });
+  const anfrage = (await anfragenListe(d, k.id))[0];
+  assert.equal(anfrage.kunde_firma, "Verwaltung Muster AG");
+  assert.equal(anfrage.rechnungsadresse, "Muster AG\nPostfach\n8001 Zürich");
+
+  // Ohne Angaben (wie bei älteren Anfragen): leer.
+  await anfrageAnlegen(d, { kontoId: k.id, stufe: "basis", preisChf: 1200, anlage: ANLAGE, name: "Ohne", email: "ohne@example.com", telefon: "", adresse: "" });
+  const ohne = (await anfragenListe(d, k.id)).find((a) => a.kunde_name === "Ohne")!;
+  assert.equal(ohne.kunde_firma, "");
+  assert.equal(ohne.rechnungsadresse, "");
+
+  const id = await beratungAnlegen(d, {
+    name: "Tim Muster",
+    email: "tim@example.com",
+    telefon: "079 444 44 44",
+    adresse: "Seestrasse 9, Thalwil",
+    plz: "8800",
+    firma: "Immo Thalwil GmbH",
+    rechnungsadresse: "Immo Thalwil GmbH\nDorfstrasse 2\n8800 Thalwil",
+    anzahlAufzuege: 1,
+    bemerkung: "",
+  });
+  const b = await beratungLaden(d, id);
+  assert.equal(b?.plz, "8800");
+  assert.equal(b?.firma, "Immo Thalwil GmbH");
+  assert.equal(b?.rechnungsadresse, "Immo Thalwil GmbH\nDorfstrasse 2\n8800 Thalwil");
+});
+
+test("Warteliste: speichert, ignoriert doppelte Einträge, neueste zuerst", { skip }, async () => {
+  await wartelisteEintragen(d, { email: "anna@example.com", plz: "3000", grund: "ausserhalb" });
+  await wartelisteEintragen(d, { email: "Anna@Example.com", plz: "3000", grund: "ausserhalb" });
+  await wartelisteEintragen(d, { email: "anna@example.com", plz: "8004", grund: "kein_angebot" });
+  const liste = await wartelisteLaden(d);
+  assert.equal(liste.length, 2, "gleiche E-Mail (auch anders geschrieben), PLZ und Grund nur einmal");
+  assert.deepEqual(
+    liste.map((e) => [e.plz, e.grund]),
+    [
+      ["8004", "kein_angebot"],
+      ["3000", "ausserhalb"],
+    ],
+  );
 });

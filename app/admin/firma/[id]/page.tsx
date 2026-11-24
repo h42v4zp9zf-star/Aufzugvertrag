@@ -5,10 +5,11 @@ import { AnfragenTabelle } from "@/components/AnfragenTabelle";
 import { PortalHeader } from "@/components/PortalHeader";
 import { db, dbKonfiguriert } from "@/lib/db";
 import { groesseText } from "@/lib/dokumente";
-import { chf, dauerText, fristText, PIKETT_TEXT, STUFEN, VERMITTLUNGSGEBUEHR_CHF, WARTUNGEN_PRO_STUFE, ZUSCHLAG_TEXT, type Antrieb, type Preismodell } from "@/lib/pricing";
+import { chf, dauerText, fristText, gebietBezirke, PIKETT_TEXT, STUFEN, VERMITTLUNGSGEBUEHR_CHF, WARTUNGEN_PRO_STUFE, ZUSCHLAG_TEXT, type Antrieb, type Preismodell } from "@/lib/pricing";
 import { anfragenListe, firmaLaden, preismodellLaden, unterlagenListe } from "@/lib/repo";
 import { kontoErforderlich } from "@/lib/sitzung";
-import { PLZ_KREISE, STUFEN_NAMEN } from "@/lib/stammdaten";
+import { STUFEN_NAMEN } from "@/lib/stammdaten";
+import { bezirkeText } from "@/lib/zuerich";
 import { STATUS_TEXT, StatusKnopf } from "../../_tabellen/StatusKnopf";
 import { PasswortLink } from "./PasswortLink";
 
@@ -21,17 +22,6 @@ export const metadata: Metadata = { title: "Liftfirma ansehen" };
 const ANTRIEB_TEXT: Record<Antrieb, string> = { seil: "Seilaufzüge", hydraulik: "Hydraulikaufzüge", unbekannt: "Unbekannt" };
 
 const datum = (d: Date) => new Date(d).toLocaleDateString("de-CH", { timeZone: "Europe/Zurich", day: "2-digit", month: "2-digit", year: "numeric" });
-
-function plzText(praefixe: string[]): string {
-  if (praefixe.length === 0) return "Keine PLZ-Kreise gewählt";
-  return [...praefixe]
-    .sort()
-    .map((k) => {
-      const region = PLZ_KREISE.find((p) => p.kreis === k)?.region;
-      return region ? `${k}xxx (${region})` : `${k}xxx`;
-    })
-    .join(", ");
-}
 
 export default async function FirmaPage({ params }: { params: Promise<{ id: string }> }) {
   if (!dbKonfiguriert()) redirect("/partner/login");
@@ -112,7 +102,7 @@ export default async function FirmaPage({ params }: { params: Promise<{ id: stri
               <dl className="angaben">
                 <div>
                   <dt>Einzugsgebiet</dt>
-                  <dd>{plzText(daten.plzPraefixe)}</dd>
+                  <dd>{bezirkeText(gebietBezirke(daten))}</dd>
                 </div>
                 <div>
                   <dt>Antriebe</dt>

@@ -1,8 +1,10 @@
 "use client";
 
 import { startTransition, useActionState, useState } from "react";
-import { chf, dauerText, fristText, KUENDIGUNGSFRIST_MONATE, PIKETT, PIKETT_STANDARD, PIKETT_TEXT, preisProAufzug, STUFEN, VERTRAGSDAUER_JAHRE, WARTUNGEN_PRO_STUFE, ZUSCHLAG_TEXT, type Anlage, type Pikett, type Preismodell, type PreismodellDaten, type Stufe } from "@/lib/pricing";
-import { HERSTELLER, PLZ_KREISE, STUFEN_NAMEN } from "@/lib/stammdaten";
+import { chf, dauerText, fristText, gebietBezirke, KUENDIGUNGSFRIST_MONATE, PIKETT, PIKETT_STANDARD, PIKETT_TEXT, preisProAufzug, STUFEN, VERTRAGSDAUER_JAHRE, WARTUNGEN_PRO_STUFE, ZUSCHLAG_TEXT, type Anlage, type Pikett, type Preismodell, type PreismodellDaten, type Stufe } from "@/lib/pricing";
+import { MARKE } from "@/lib/config";
+import { HERSTELLER, STUFEN_NAMEN } from "@/lib/stammdaten";
+import { BEZIRKE, type Bezirk } from "@/lib/zuerich";
 import { preiseSpeichern, type FormStatus } from "../actions";
 import { Fehlerliste } from "../Formulare";
 
@@ -40,7 +42,8 @@ const n = (v: string) => Number(v.replace(/['’\s]/g, "").replace(",", "."));
 export function PreisFormular({ gespeichert, veroeffentlicht }: { gespeichert: PreismodellDaten | null; veroeffentlicht: boolean }) {
   const [status, action, laeuft] = useActionState(preiseSpeichern, START);
 
-  const [plz, setPlz] = useState<string[]>(gespeichert?.plzPraefixe ?? []);
+  // Einzugsgebiet nach Bezirken (Verbesserung Nr. 23); ältere Einträge mit PLZ-Kreisen werden umgerechnet.
+  const [bezirke, setBezirke] = useState<Bezirk[]>(gespeichert ? gebietBezirke(gespeichert) : []);
   const [herstellerAlle, setHerstellerAlle] = useState(gespeichert ? gespeichert.hersteller === "alle" : true);
   const [hersteller, setHersteller] = useState<string[]>(gespeichert && gespeichert.hersteller !== "alle" ? gespeichert.hersteller : []);
   const [seil, setSeil] = useState(gespeichert ? gespeichert.antriebe.includes("seil") : true);
@@ -77,7 +80,7 @@ export function PreisFormular({ gespeichert, veroeffentlicht }: { gespeichert: P
   // Vorschau mit den aktuellen Eingaben.
   const vorschauModell: Preismodell = {
     firma: "Vorschau",
-    plzPraefixe: plz,
+    bezirke,
     hersteller: "alle",
     antriebe: ["seil", "hydraulik"],
     pakete: [],
@@ -117,14 +120,28 @@ export function PreisFormular({ gespeichert, veroeffentlicht }: { gespeichert: P
       <fieldset className="card group">
         <legend className="sr-only">Einzugsgebiet</legend>
         <h2>Einzugsgebiet</h2>
-        <p className="muted">In welchen PLZ-Kreisen übernehmen Sie Wartungen?</p>
+        <p className="muted">In welchen Bezirken übernehmen Sie Wartungen? Zum Start gibt es {MARKE} nur im Kanton Zürich.</p>
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={bezirke.length === BEZIRKE.length}
+            onChange={(e) => setBezirke(e.target.checked ? [...BEZIRKE] : [])}
+          />
+          <span>
+            <strong>Ganzer Kanton Zürich</strong>
+          </span>
+        </label>
         <div className="checks">
-          {PLZ_KREISE.map((k) => (
-            <label key={k.kreis} className="check">
-              <input type="checkbox" name="plz" value={k.kreis} checked={plz.includes(k.kreis)} onChange={(e) => setPlz(toggle(plz, k.kreis, e.target.checked))} />
-              <span>
-                PLZ {k.kreis}xxx <small>{k.region}</small>
-              </span>
+          {BEZIRKE.map((b) => (
+            <label key={b} className="check">
+              <input
+                type="checkbox"
+                name="bezirk"
+                value={b}
+                checked={bezirke.includes(b)}
+                onChange={(e) => setBezirke((alt) => BEZIRKE.filter((x) => (x === b ? e.target.checked : alt.includes(x))))}
+              />
+              <span>Bezirk {b}</span>
             </label>
           ))}
         </div>
@@ -162,7 +179,7 @@ export function PreisFormular({ gespeichert, veroeffentlicht }: { gespeichert: P
       <fieldset className="card group">
         <legend className="sr-only">Pakete</legend>
         <h2>Pakete und Grundpreise</h2>
-        <p className="muted">Grundpreis pro Aufzug und Jahr in CHF, für einen Aufzug mit bis zu 4 Haltestellen.</p>
+        <p className="muted">Grundpreis pro Aufzug und Jahr in CHF, exkl. MWST, für einen Aufzug mit bis zu 4 Haltestellen. Kunden sehen die MWST separat.</p>
         <div className="pakete">
           {STUFEN.map((s) => {
             const p = pakete[s];
@@ -175,7 +192,7 @@ export function PreisFormular({ gespeichert, veroeffentlicht }: { gespeichert: P
                 {p.an && (
                   <>
                     <label className="field">
-                      Grundpreis (CHF / Jahr)
+                      Grundpreis (CHF / Jahr, exkl. MWST)
                       <input name={`${s}_grundpreis`} inputMode="decimal" value={p.grundpreis} onChange={(e) => setPaket(s, "grundpreis", e.target.value)} required />
                     </label>
                     <p className="field">
@@ -235,7 +252,7 @@ export function PreisFormular({ gespeichert, veroeffentlicht }: { gespeichert: P
       <fieldset className="card group">
         <legend className="sr-only">Zuschläge</legend>
         <h2>Zuschläge</h2>
-        <p className="muted">In CHF pro Aufzug und Jahr, gelten für alle Pakete. 0 wenn kein Zuschlag.</p>
+        <p className="muted">In CHF pro Aufzug und Jahr, exkl. MWST, gelten für alle Pakete. 0 wenn kein Zuschlag.</p>
         <div className="grid2">
           {ZUSCHLAEGE.map((z) => (
             <label key={z.key} className="field">
@@ -255,7 +272,7 @@ export function PreisFormular({ gespeichert, veroeffentlicht }: { gespeichert: P
           {STUFEN.map((s) => (
             <div key={s}>
               <strong>{vorschau(s)}</strong>
-              <span>{STUFEN_NAMEN[s]} pro Jahr</span>
+              <span>{STUFEN_NAMEN[s]} pro Jahr, exkl. MWST</span>
             </div>
           ))}
         </div>

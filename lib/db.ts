@@ -121,6 +121,25 @@ CREATE TABLE IF NOT EXISTS beratung_fotos (
   erstellt_am  TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (beratung_id, foto_id)
 );
+
+-- Rechnungsangaben (Paket 2, Verbesserung Nr. 3, 24.11.2026): Firma oder Verwaltung (freiwillig)
+-- und Rechnungsadresse (leer = wie die Adresse der Liegenschaft). Bei der Beratung auch die PLZ.
+ALTER TABLE anfragen ADD COLUMN IF NOT EXISTS kunde_firma TEXT NOT NULL DEFAULT '';
+ALTER TABLE anfragen ADD COLUMN IF NOT EXISTS rechnungsadresse TEXT NOT NULL DEFAULT '';
+ALTER TABLE beratungen ADD COLUMN IF NOT EXISTS plz TEXT NOT NULL DEFAULT '';
+ALTER TABLE beratungen ADD COLUMN IF NOT EXISTS firma TEXT NOT NULL DEFAULT '';
+ALTER TABLE beratungen ADD COLUMN IF NOT EXISTS rechnungsadresse TEXT NOT NULL DEFAULT '';
+
+-- Warteliste (Paket 2, Verbesserungen Nr. 8 und 23): E-Mail-Adressen von Besuchern ausserhalb des
+-- Kantons Zürich oder ohne Angebot in ihrer Region. Dieselbe Adresse wird pro PLZ und Grund nur einmal gespeichert.
+CREATE TABLE IF NOT EXISTS warteliste (
+  id           SERIAL PRIMARY KEY,
+  email        TEXT NOT NULL,
+  plz          TEXT NOT NULL,
+  grund        TEXT NOT NULL,
+  erstellt_am  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS warteliste_eindeutig ON warteliste (lower(email), plz, grund);
 `;
 
 let pool: pg.Pool | null = null;

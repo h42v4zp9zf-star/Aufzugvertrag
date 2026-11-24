@@ -151,6 +151,13 @@ td.right, th.right { text-align: right; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .spamfalle { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
 
+/* Warteliste (Paket 2): E-Mail hinterlassen, wenn es noch kein Angebot gibt oder die PLZ ausserhalb liegt. */
+.warteliste-box { max-width: 560px; margin: 0 auto 24px; display: grid; gap: 12px; text-align: left; }
+.warteliste-box h2 { font-size: 20px; }
+.warteliste-box .btn { align-self: flex-start; }
+.warteliste { display: grid; gap: 12px; }
+.warteliste .btn { justify-self: start; }
+
 .summary { background: var(--white); border: 1px solid var(--line); border-radius: 12px; padding: 32px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px; }
 .summary__label { font-size: 13px; color: var(--muted); }
 .summary__main { font-size: 22px; font-weight: 500; margin: 6px 0; }

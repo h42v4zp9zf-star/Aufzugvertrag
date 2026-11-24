@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Header } from "@/components/Header";
-import { ADRESSE, KONTAKT_EMAIL, MARKE, VERANTWORTLICH } from "@/lib/config";
+import { telLink } from "@/components/Footer";
+import { ADRESSE, KONTAKT_EMAIL, MARKE, TELEFON, VERANTWORTLICH } from "@/lib/config";
 
 export const metadata: Metadata = { title: "Impressum" };
 
@@ -31,6 +32,8 @@ export default function Impressum() {
             <br />
             {ADRESSE.land}
             <br />
+            <br />
+            Telefon: <a href={telLink(TELEFON)}>{TELEFON}</a>
             <br />
             E-Mail: <a href={`mailto:${KONTAKT_EMAIL}`}>{KONTAKT_EMAIL}</a>
           </address>

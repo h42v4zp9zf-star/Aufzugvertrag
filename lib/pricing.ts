@@ -1,6 +1,7 @@
 // Vergleichslogik: berechnet aus den Preismodellen der Liftfirmen
 // feste Jahrespreise für eine Kundenanlage und rangiert sie pro Stufe.
 import { herstellerGruppe } from "./stammdaten.ts";
+import { bezirkeAusPlzKreisen, bezirkeVon, imKantonZuerich, type Bezirk } from "./zuerich.ts";
 
 export type Stufe = "basis" | "standard" | "komplett";
 export type Antrieb = "seil" | "hydraulik" | "unbekannt";
@@ -80,7 +81,10 @@ export type PreismodellDaten = Omit<Preismodell, "firma" | "firmaId" | "bewertun
 export interface Preismodell {
   firma: string;
   firmaId?: number; // gesetzt bei Preismodellen aus der Datenbank
-  plzPraefixe: string[]; // Einzugsgebiet, z. B. ["8", "9"]
+  /** Einzugsgebiet: Bezirke im Kanton Zürich (seit 24.11.2026, Verbesserung Nr. 23). */
+  bezirke?: Bezirk[];
+  /** Früheres Einzugsgebiet nach PLZ-Kreisen, z. B. ["8"]. Gilt nur, solange keine Bezirke gespeichert sind. */
+  plzPraefixe?: string[];
   hersteller: string[] | "alle";
   antriebe: Antrieb[];
   pakete: Paket[];
@@ -123,8 +127,17 @@ export interface Angebot {
 
 const AKTUELLES_JAHR = 2026;
 
+/** Einzugsgebiet als Bezirke, z. B. zum Anzeigen und Vorausfüllen; ältere PLZ-Kreise werden umgerechnet („8“ = ganzer Kanton). */
+export function gebietBezirke(m: Pick<Preismodell, "bezirke" | "plzPraefixe">): Bezirk[] {
+  return m.bezirke ?? bezirkeAusPlzKreisen(m.plzPraefixe ?? []);
+}
+
 export function deckt(modell: Preismodell, anlage: Anlage): boolean {
-  const imGebiet = modell.plzPraefixe.some((p) => anlage.plz.trim().startsWith(p));
+  // Zum Start nur im Kanton Zürich (Entscheid Dario 24.11.2026): ausserhalb liefert bezirkeVon nichts.
+  // Ältere Preismodelle ohne Bezirke gelten weiter nur für ihre PLZ-Kreise, bis die Firma Bezirke speichert.
+  const imGebiet = modell.bezirke
+    ? bezirkeVon(anlage.plz).some((b) => modell.bezirke!.includes(b))
+    : imKantonZuerich(anlage.plz) && (modell.plzPraefixe ?? []).some((p) => p && anlage.plz.startsWith(p));
   const hersteller = herstellerGruppe(anlage.hersteller);
   const herstellerOk = modell.hersteller === "alle" || hersteller === "unbekannt" || modell.hersteller.includes(hersteller);
   const antriebOk = anlage.antrieb === "unbekannt" || modell.antriebe.includes(anlage.antrieb);

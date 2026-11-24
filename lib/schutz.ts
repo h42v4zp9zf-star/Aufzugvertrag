@@ -4,7 +4,7 @@
 import { createHash } from "node:crypto";
 import type { Db } from "./db.ts";
 
-export type VersuchArt = "login-email" | "login-ip" | "registrierung" | "beratung" | "anfrage" | "passwort";
+export type VersuchArt = "login-email" | "login-ip" | "registrierung" | "beratung" | "anfrage" | "passwort" | "warteliste";
 
 /** Grenzen pro Art: höchstens `max` Versuche in `minuten`. */
 export const GRENZEN: Record<VersuchArt, { max: number; minuten: number }> = {
@@ -14,6 +14,7 @@ export const GRENZEN: Record<VersuchArt, { max: number; minuten: number }> = {
   beratung: { max: 5, minuten: 60 },
   anfrage: { max: 10, minuten: 60 },
   passwort: { max: 10, minuten: 60 },
+  warteliste: { max: 10, minuten: 60 },
 };
 
 export const MELDUNG_LOGIN_GESPERRT = "Zu viele falsche Versuche. Bitte warten Sie 15 Minuten und versuchen Sie es dann noch einmal.";

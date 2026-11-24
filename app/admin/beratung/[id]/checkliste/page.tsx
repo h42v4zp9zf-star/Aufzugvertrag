@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { PortalHeader } from "@/components/PortalHeader";
+import { liegenschaftText } from "@/lib/adresse";
 import { checklisteBereinigen, leereCheckliste } from "@/lib/checkliste";
 import { db, dbKonfiguriert } from "@/lib/db";
 import { beratungLaden, checklisteLaden, fotoIds } from "@/lib/repo";
@@ -32,7 +33,7 @@ export default async function ChecklistePage({ params }: { params: Promise<{ id:
             name: b.name,
             email: b.email,
             telefon: b.telefon,
-            adresse: b.adresse,
+            adresse: liegenschaftText(b),
             anzahlAufzuege: b.anzahl_aufzuege,
             termin: b.termin_datum && b.termin_zeit ? terminText(b.termin_datum, b.termin_zeit) : null,
             bemerkung: b.bemerkung,

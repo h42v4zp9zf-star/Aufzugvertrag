@@ -21,6 +21,13 @@ export interface AnfrageEingabe {
   email: string;
   telefon: string;
   adresse: string;
+  /** Rechnungsangaben (Paket 2, Verbesserung Nr. 3): Firma oder Verwaltung freiwillig, Rechnungsadresse nur,
+   *  wenn sie nicht die Adresse der Liegenschaft ist. */
+  firma?: string;
+  rechnungAndere?: boolean;
+  rechnungsadresse?: string;
+  /** Häkchen zur Vermittlungsgebühr (Paket 2, Verbesserung Nr. 4). */
+  gebuehrBestaetigt?: boolean;
   /** Unsichtbares Feld gegen Spam (Verbesserung Nr. 32), muss leer sein. */
   webseite?: string;
 }
@@ -36,8 +43,15 @@ export async function anfrageSenden(e: AnfrageEingabe): Promise<AnfrageErgebnis>
   const email = String(e.email ?? "").trim().slice(0, 200);
   const telefon = String(e.telefon ?? "").trim().slice(0, 50);
   const adresse = String(e.adresse ?? "").trim().slice(0, 300);
+  const firma = String(e.firma ?? "").trim().slice(0, 200);
+  const rechnungsadresse = e.rechnungAndere ? String(e.rechnungsadresse ?? "").trim().slice(0, 500) : "";
   if (!name) return { ok: false, fehler: "Bitte Ihren Namen angeben." };
   if (!EMAIL.test(email)) return { ok: false, fehler: "Bitte eine gültige E-Mail-Adresse angeben." };
+  if (!telefon) return { ok: false, fehler: "Bitte eine Telefonnummer angeben, damit die Liftfirma Sie erreichen kann." };
+  if (!adresse) return { ok: false, fehler: "Bitte die Adresse der Liegenschaft angeben." };
+  if (e.rechnungAndere && !rechnungsadresse) return { ok: false, fehler: "Bitte die Rechnungsadresse angeben." };
+  if (e.gebuehrBestaetigt !== true)
+    return { ok: false, fehler: `Bitte bestätigen Sie die Vermittlungsgebühr von CHF ${VERMITTLUNGSGEBUEHR_CHF} (nur wenn der Vertrag zustande kommt).` };
   if (!STUFEN.includes(e.stufe)) return { ok: false, fehler: "Unbekanntes Paket." };
 
   const anlage = fromParams(new URLSearchParams(String(e.anlageParams ?? "")));
@@ -69,6 +83,8 @@ export async function anfrageSenden(e: AnfrageEingabe): Promise<AnfrageErgebnis>
     email,
     telefon,
     adresse,
+    firma,
+    rechnungsadresse,
   });
 
   // E-Mail an Dario mit PDF der Anfrage, erst nach der Antwort an den Kunden.
@@ -87,7 +103,7 @@ export async function anfrageSenden(e: AnfrageEingabe): Promise<AnfrageErgebnis>
         vertragsdauerJahre: paket.vertragsdauerJahre,
         kuendigungsfristMonate: paket.kuendigungsfristMonate,
         gebuehrChf: VERMITTLUNGSGEBUEHR_CHF,
-        kunde: { name, email, telefon, adresse },
+        kunde: { name, email, telefon, adresse, firma, rechnungsadresse },
         anlage,
         angenommenAm,
         verwaltungUrl: adresseSeite ? `${adresseSeite}/admin?bereich=anfragen` : null,
