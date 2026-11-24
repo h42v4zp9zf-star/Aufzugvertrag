@@ -103,6 +103,56 @@ export async function sitzungLoeschen(d: Db, tokenHash: string): Promise<void> {
   await d.query(`DELETE FROM sitzungen WHERE token_hash = $1`, [tokenHash]);
 }
 
+/** Neuer Link zum Zurücksetzen des Passworts; ältere Links dieses Kontos werden ungültig. */
+export async function passwortLinkAnlegen(d: Db, kontoId: number, tokenHash: string, minuten: number): Promise<void> {
+  await d.query(`DELETE FROM passwort_links WHERE konto_id = $1`, [kontoId]);
+  await d.query(
+    `INSERT INTO passwort_links (token_hash, konto_id, gueltig_bis) VALUES ($1, $2, now() + make_interval(mins => $3))`,
+    [tokenHash, kontoId, minuten],
+  );
+}
+
+/** Wurde für dieses Konto in den letzten `minuten` schon ein Link erstellt? (gegen viele Mails) */
+export async function passwortLinkKuerzlich(d: Db, kontoId: number, minuten: number): Promise<boolean> {
+  const { rows } = await d.query(
+    `SELECT 1 FROM passwort_links WHERE konto_id = $1 AND erstellt_am > now() - make_interval(mins => $2)`,
+    [kontoId, minuten],
+  );
+  return rows.length > 0;
+}
+
+/** Konto zu einem gültigen Link, sonst null (abgelaufen, schon benutzt oder unbekannt). */
+export async function kontoPerPasswortLink(d: Db, tokenHash: string): Promise<Konto | null> {
+  const { rows } = await d.query<Konto>(
+    `SELECT k.id, k.firma, k.uid, k.email, k.rolle, k.status, k.erstellt_am
+       FROM passwort_links l JOIN konten k ON k.id = l.konto_id
+      WHERE l.token_hash = $1 AND l.gueltig_bis > now()`,
+    [tokenHash],
+  );
+  return rows[0] ?? null;
+}
+
+/**
+ * Setzt das neue Passwort, wenn der Link gültig ist, und löst ihn dabei ein (nur einmal).
+ * Alle Anmeldungen des Kontos werden beendet. Gibt das Konto zurück, sonst null.
+ */
+export async function passwortZuruecksetzen(d: Db, tokenHash: string, passwortHash: string): Promise<Konto | null> {
+  const { rows } = await d.query<Konto>(
+    `WITH link AS (
+       DELETE FROM passwort_links WHERE token_hash = $1 AND gueltig_bis > now() RETURNING konto_id
+     )
+     UPDATE konten k SET passwort_hash = $2 FROM link WHERE k.id = link.konto_id
+     RETURNING k.id, k.firma, k.uid, k.email, k.rolle, k.status, k.erstellt_am`,
+    [tokenHash, passwortHash],
+  );
+  const konto = rows[0] ?? null;
+  if (konto) {
+    await d.query(`DELETE FROM sitzungen WHERE konto_id = $1`, [konto.id]);
+    await d.query(`DELETE FROM passwort_links WHERE konto_id = $1`, [konto.id]);
+  }
+  return konto;
+}
+
 export async function preismodellSpeichern(d: Db, kontoId: number, daten: PreismodellDaten, veroeffentlicht: boolean): Promise<void> {
   await d.query(
     `INSERT INTO preismodelle (konto_id, daten, veroeffentlicht, geaendert_am) VALUES ($1, $2, $3, now())

@@ -87,6 +87,16 @@ CREATE TABLE IF NOT EXISTS firmen_dokumente (
 );
 CREATE INDEX IF NOT EXISTS firmen_dokumente_konto ON firmen_dokumente (konto_id);
 
+-- „Passwort vergessen“ (Entscheid Dario 24.11.2026): Link per E-Mail (1 Stunde) oder von der
+-- Verwaltung erstellt (24 Stunden). Nur der Hash des Tokens liegt hier, jeder Link gilt einmal.
+CREATE TABLE IF NOT EXISTS passwort_links (
+  token_hash   TEXT PRIMARY KEY,
+  konto_id     INTEGER NOT NULL REFERENCES konten(id) ON DELETE CASCADE,
+  gueltig_bis  TIMESTAMPTZ NOT NULL,
+  erstellt_am  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS passwort_links_konto ON passwort_links (konto_id);
+
 CREATE TABLE IF NOT EXISTS beratung_checklisten (
   beratung_id       INTEGER PRIMARY KEY REFERENCES beratungen(id) ON DELETE CASCADE,
   daten             JSONB NOT NULL,

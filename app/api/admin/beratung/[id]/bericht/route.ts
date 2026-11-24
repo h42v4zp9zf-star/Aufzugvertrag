@@ -1,31 +1,15 @@
 // Bericht zur Beratung vor Ort als PDF herunterladen (nur Verwaltung).
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { berichtErstellen } from "@/lib/bericht";
 import { anlageAusCheckliste, checklisteBereinigen, leereCheckliste } from "@/lib/checkliste";
 import { KONTAKT_EMAIL, MARKE, VERANTWORTLICH } from "@/lib/config";
 import { db } from "@/lib/db";
 import { toParams } from "@/lib/anlageParams";
 import { checklisteLaden, vorschauBilder } from "@/lib/repo";
+import { logoLaden, seitenAdresse } from "@/lib/seite";
 import { terminText } from "@/lib/termine";
 import { verwaltungBeratung } from "@/lib/verwaltungApi";
 
 export const dynamic = "force-dynamic";
-
-async function logoLaden(): Promise<Uint8Array | null> {
-  try {
-    return await readFile(path.join(process.cwd(), "public", "logo", "elevaris-logo-v2.png"));
-  } catch {
-    return null; // dann steht der Markenname als Text im Bericht
-  }
-}
-
-/** Adresse der Seite, so wie der Browser sie aufgerufen hat (Testversion oder später elevaris.ch). */
-function seitenAdresse(req: Request): string {
-  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
-  const proto = req.headers.get("x-forwarded-proto") ?? new URL(req.url).protocol.replace(":", "");
-  return host ? `${proto.split(",")[0]}://${host.split(",")[0]}` : new URL(req.url).origin;
-}
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const r = await verwaltungBeratung(req, params);
@@ -36,7 +20,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const daten = stand ? checklisteBereinigen(stand.daten, b.anzahl_aufzuege) : leereCheckliste(b.anzahl_aufzuege, b.name);
 
   const anlage = anlageAusCheckliste(daten, b.adresse);
-  const angeboteUrl = anlage ? `${seitenAdresse(req)}/angebote?${toParams(anlage).toString()}` : null;
+  const angeboteUrl = anlage ? `${seitenAdresse(req.headers, req.url)}/angebote?${toParams(anlage).toString()}` : null;
 
   const pdf = await berichtErstellen({
     marke: MARKE,

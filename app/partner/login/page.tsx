@@ -7,7 +7,8 @@ import { LoginForm } from "../Formulare";
 
 export const dynamic = "force-dynamic";
 
-export default async function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ passwort?: string | string[] }> }) {
+  const passwortNeu = (await searchParams).passwort === "neu";
   if (dbKonfiguriert()) {
     const konto = await aktuellesKonto();
     if (konto) redirect(konto.rolle === "admin" ? "/admin" : "/partner");
@@ -20,6 +21,11 @@ export default async function LoginPage() {
           <h1>Anmelden</h1>
           <p className="muted">Für Liftfirmen: Preise hinterlegen und Anfragen sehen.</p>
         </div>
+        {passwortNeu && (
+          <p className="banner banner--ok" role="status">
+            Ihr Passwort ist geändert. Bitte melden Sie sich mit dem neuen Passwort an.
+          </p>
+        )}
         {dbKonfiguriert() ? <LoginForm /> : <DbFehlt />}
       </main>
     </>

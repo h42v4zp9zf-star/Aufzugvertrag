@@ -1,9 +1,15 @@
 "use server";
 
+import { headers } from "next/headers";
+import { after } from "next/server";
 import { fromParams } from "@/lib/anlageParams";
+import { anfrageMail } from "@/lib/benachrichtigung";
+import { KONTAKT_EMAIL, MARKE } from "@/lib/config";
 import { db, dbKonfiguriert } from "@/lib/db";
-import { deckt, preisProAufzug, STUFEN, type Stufe } from "@/lib/pricing";
+import { benachrichtigen } from "@/lib/mail";
+import { deckt, preisProAufzug, STUFEN, VERMITTLUNGSGEBUEHR_CHF, type Stufe } from "@/lib/pricing";
 import { aktivePreismodelle, anfrageAnlegen } from "@/lib/repo";
+import { logoLaden, seitenAdresse } from "@/lib/seite";
 
 export interface AnfrageEingabe {
   anlageParams: string;
@@ -42,15 +48,40 @@ export async function anfrageSenden(e: AnfrageEingabe): Promise<AnfrageErgebnis>
   const proAufzug = preisProAufzug(modell, paket, anlage, []);
   if (proAufzug === null) return { ok: false, fehler: "Dieses Angebot ist nicht mehr verfügbar." };
 
+  const preisChf = Math.round(proAufzug * Math.max(1, anlage.anzahlAufzuege));
   await anfrageAnlegen(d, {
     kontoId: modell.firmaId!,
     stufe: e.stufe,
-    preisChf: Math.round(proAufzug * Math.max(1, anlage.anzahlAufzuege)),
+    preisChf,
     anlage,
     name,
     email,
     telefon,
     adresse,
   });
+
+  // E-Mail an Dario mit PDF der Anfrage, erst nach der Antwort an den Kunden.
+  const angenommenAm = new Date();
+  const adresseSeite = seitenAdresse(await headers());
+  const stufe = e.stufe;
+  after(() =>
+    benachrichtigen("Angebot angenommen", async () =>
+      anfrageMail({
+        marke: MARKE,
+        kontaktEmail: KONTAKT_EMAIL,
+        logo: await logoLaden(),
+        firma: modell.firma,
+        stufe,
+        preisProJahrChf: preisChf,
+        vertragsdauerJahre: paket.vertragsdauerJahre,
+        kuendigungsfristMonate: paket.kuendigungsfristMonate,
+        gebuehrChf: VERMITTLUNGSGEBUEHR_CHF,
+        kunde: { name, email, telefon, adresse },
+        anlage,
+        angenommenAm,
+        verwaltungUrl: adresseSeite ? `${adresseSeite}/admin?bereich=anfragen` : null,
+      }),
+    ),
+  );
   return { ok: true };
 }

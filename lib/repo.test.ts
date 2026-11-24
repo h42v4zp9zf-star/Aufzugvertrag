@@ -25,6 +25,10 @@ import {
   kontoMitHashPerEmail,
   kontoPerSitzung,
   kontoStatusSetzen,
+  kontoPerPasswortLink,
+  passwortLinkAnlegen,
+  passwortLinkKuerzlich,
+  passwortZuruecksetzen,
   preismodellLaden,
   preismodellSpeichern,
   sitzungAnlegen,
@@ -313,4 +317,31 @@ test("Vertragsunterlagen der Liftfirmen: höchstens 3, nur die eigenen löschen"
   assert.equal((await unterlagenListe(d, a.id)).length, UNTERLAGEN_MAX - 1);
   assert.equal(await unterlageSpeichern(d, a.id, "neu.pdf", pdf), "gespeichert");
   assert.equal((await unterlagenListe(d, b.id)).length, 0);
+});
+
+test("Passwort vergessen: Link gilt einmal, macht ältere ungültig und beendet Anmeldungen", { skip }, async () => {
+  const k = await kontoAnlegen(d, { firma: "Vergesslich AG", uid: "CHE-222.222.222", email: "vergesslich@example.ch", passwortHash: "alt" });
+  await sitzungAnlegen(d, tokenHash("sitzung-v"), k.id);
+  assert.equal(await passwortLinkKuerzlich(d, k.id, 2), false);
+
+  await passwortLinkAnlegen(d, k.id, tokenHash("link-1"), 60);
+  assert.equal(await passwortLinkKuerzlich(d, k.id, 2), true);
+  assert.equal((await kontoPerPasswortLink(d, tokenHash("link-1")))?.id, k.id);
+  await passwortLinkAnlegen(d, k.id, tokenHash("link-2"), 60);
+  assert.equal(await kontoPerPasswortLink(d, tokenHash("link-1")), null, "neuer Link macht den alten ungültig");
+  assert.equal(await passwortZuruecksetzen(d, tokenHash("link-1"), "neu-1"), null);
+  assert.equal(await passwortZuruecksetzen(d, tokenHash("unbekannt"), "neu-1"), null);
+
+  const r = await passwortZuruecksetzen(d, tokenHash("link-2"), "neu-2");
+  assert.equal(r?.id, k.id);
+  assert.equal((await kontoMitHashPerEmail(d, "vergesslich@example.ch"))?.passwort_hash, "neu-2");
+  assert.equal(await kontoPerSitzung(d, tokenHash("sitzung-v")), null, "alte Anmeldungen sind beendet");
+  assert.equal(await passwortZuruecksetzen(d, tokenHash("link-2"), "neu-3"), null, "Link funktioniert nur einmal");
+  assert.equal((await kontoMitHashPerEmail(d, "vergesslich@example.ch"))?.passwort_hash, "neu-2");
+
+  // Abgelaufener Link
+  await passwortLinkAnlegen(d, k.id, tokenHash("link-alt"), 60);
+  await d.query("UPDATE passwort_links SET gueltig_bis = now() - interval '1 minute' WHERE konto_id = $1", [k.id]);
+  assert.equal(await kontoPerPasswortLink(d, tokenHash("link-alt")), null);
+  assert.equal(await passwortZuruecksetzen(d, tokenHash("link-alt"), "neu-4"), null);
 });
