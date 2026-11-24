@@ -134,3 +134,18 @@ test("Vertragsdauer und Kündigungsfrist erscheinen im Angebot, ändern die Reih
 test("CHF-Format mit Schweizer Tausendertrennzeichen", () => {
   assert.match(chf(12500), /^CHF 12.500$/);
 });
+
+test("Einzugsgebiet nach Bezirken, nur im Kanton Zürich", () => {
+  const nurUster = modell("U", 1000, { bezirke: ["Uster"], plzPraefixe: undefined });
+  assert.equal(deckt(nurUster, { ...anlage, plz: "8610" }), true, "Uster liegt im Bezirk Uster");
+  assert.equal(deckt(nurUster, { ...anlage, plz: "8004" }), false, "Zürich-Aussersihl liegt im Bezirk Zürich");
+  assert.equal(deckt(nurUster, { ...anlage, plz: "8044" }), true, "8044 gehört zu Zürich und Uster (Gockhausen)");
+  // Ausserhalb des Kantons nie, auch wenn eine Firma den ganzen Kanton abdeckt.
+  assert.equal(deckt(modell("Z", 1000), { ...anlage, plz: "3000" }), false, "Bern");
+  assert.equal(deckt(modell("Z", 1000), { ...anlage, plz: "8200" }), false, "Schaffhausen");
+  // Gespeicherte Bezirke gelten vor den früheren PLZ-Kreisen.
+  assert.equal(deckt(modell("B", 1000, { bezirke: ["Meilen"], plzPraefixe: ["8"] }), { ...anlage, plz: "8004" }), false);
+  // Früheres Preismodell mit PLZ-Kreis „80“: gilt weiter nur für PLZ 80xx.
+  assert.equal(deckt(modell("A", 1000, { plzPraefixe: ["80"] }), { ...anlage, plz: "8004" }), true);
+  assert.equal(deckt(modell("A", 1000, { plzPraefixe: ["80"] }), { ...anlage, plz: "8610" }), false);
+});

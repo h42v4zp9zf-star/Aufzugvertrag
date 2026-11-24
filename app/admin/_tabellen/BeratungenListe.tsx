@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { liegenschaftText } from "@/lib/adresse";
 import { BERATUNG_PREIS_CHF } from "@/lib/config";
 import { groesseText } from "@/lib/dokumente";
 import { chf } from "@/lib/pricing";
@@ -24,7 +25,7 @@ export function BeratungenListe({ beratungen, heute }: { beratungen: Beratung[];
       const kommend = !b.termin_datum || b.termin_datum >= heute;
       if (termine === "kommende" && !kommend) return false;
       if (termine === "vergangene" && kommend) return false;
-      return passt(suche, b.name, b.email, b.telefon, b.adresse);
+      return passt(suche, b.name, b.email, b.telefon, b.adresse, b.plz, b.firma);
     });
     const ohne = "9999"; // ohne Termin ans Ende
     const sort: Record<string, (x: Beratung, y: Beratung) => number> = {
@@ -110,12 +111,28 @@ export function BeratungenListe({ beratungen, heute }: { beratungen: Beratung[];
                       </td>
                       <td>
                         {b.name}
+                        {b.firma && (
+                          <>
+                            <br />
+                            {b.firma}
+                          </>
+                        )}
                         <br />
                         <a href={`mailto:${b.email}`}>{b.email}</a>
                         <br />
                         {b.telefon}
                       </td>
-                      <td>{b.adresse}</td>
+                      <td>
+                        {liegenschaftText(b)}
+                        {b.rechnungsadresse && (
+                          <>
+                            <br />
+                            <span className="muted" style={{ whiteSpace: "pre-line" }}>
+                              Rechnung an: {b.rechnungsadresse}
+                            </span>
+                          </>
+                        )}
+                      </td>
                       <td>{b.anzahl_aufzuege}</td>
                       <td style={{ whiteSpace: "pre-line" }}>{b.bemerkung || "–"}</td>
                       <td>

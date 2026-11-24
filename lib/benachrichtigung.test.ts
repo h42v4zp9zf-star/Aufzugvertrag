@@ -47,7 +47,8 @@ test("Beratung: Betreff mit Termin und Name, PDF und Dokumente im Anhang", async
   });
   assert.equal(m.betreff, "Neue Beratung vor Ort: Mittwoch, 25. November 2026, 09:00–10:00 Uhr – Sandra Keller");
   assert.match(m.text, /Telefon: 079 456 78 90/);
-  assert.match(m.text, /Preis: CHF 100 \(Fixpreis\)/);
+  assert.match(m.text, /Preis: CHF 100 exkl\. MWST \(Fixpreis\)/);
+  assert.match(m.text, /Rechnungsadresse: wie Adresse der Liegenschaft/);
   assert.match(m.text, /Dokumente im Anhang: Wartungsvertrag\.pdf/);
   assert.match(m.text, /Verwaltung: https:\/\/example\.ch\/admin/);
   assert.deepEqual(m.anhaenge.map((a) => a.dateiname), ["Beratung 2026-11-25 0900 Sandra Keller.pdf", "Wartungsvertrag.pdf"]);
@@ -90,16 +91,18 @@ test("Angebot angenommen: Betreff mit Paket, Firma und Name, PDF der Anfrage", a
     vertragsdauerJahre: 3,
     kuendigungsfristMonate: 6,
     gebuehrChf: 160,
-    kunde: { ...KUNDE, telefon: "" },
+    kunde: { ...KUNDE, telefon: "", firma: "Verwaltung Muster AG", rechnungsadresse: "Muster AG\nPostfach\n8001 Zürich" },
     anlage: ANLAGE,
     angenommenAm: new Date("2026-11-24T23:30:00Z"),
     verwaltungUrl: "https://example.ch/admin?bereich=anfragen",
   });
   assert.equal(m.betreff, "Angebot angenommen: Standard bei Limmat Lift GmbH – Sandra Keller");
-  assert.match(m.text, /Preis pro Jahr: CHF 4.300/);
+  assert.match(m.text, /Preis pro Jahr: CHF 4.300 exkl\. MWST/);
   assert.match(m.text, /Vertragsdauer: 3 Jahre, Kündigungsfrist 6 Monate/);
-  assert.match(m.text, /Vermittlungsgebühr: CHF 160/);
+  assert.match(m.text, /Vermittlungsgebühr: CHF 160 exkl\. MWST, nur wenn der Vertrag zustande kommt/);
   assert.doesNotMatch(m.text, /Telefon/, "leere Angaben werden weggelassen");
+  assert.match(m.text, /Firma oder Verwaltung: Verwaltung Muster AG/);
+  assert.match(m.text, /Rechnungsadresse: Muster AG, Postfach, 8001 Zürich/);
   // 23:30 UTC ist in Zürich schon der nächste Tag
   assert.deepEqual(m.anhaenge.map((a) => a.dateiname), ["Anfrage 2026-11-25 Limmat Lift GmbH Sandra Keller.pdf"]);
   await istPdf(m.anhaenge[0].inhalt);

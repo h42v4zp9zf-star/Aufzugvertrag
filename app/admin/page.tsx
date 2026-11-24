@@ -3,11 +3,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PortalHeader } from "@/components/PortalHeader";
 import { db, dbKonfiguriert } from "@/lib/db";
-import { anfragenListe, beratungenListe, kontenListe } from "@/lib/repo";
+import { anfragenListe, beratungenListe, kontenListe, wartelisteLaden } from "@/lib/repo";
 import { kontoErforderlich } from "@/lib/sitzung";
 import { AnfragenListe } from "./_tabellen/AnfragenListe";
 import { BeratungenListe } from "./_tabellen/BeratungenListe";
 import { FirmenTabelle } from "./_tabellen/FirmenTabelle";
+import { WartelisteTabelle } from "./_tabellen/WartelisteTabelle";
 
 export const metadata: Metadata = { title: "Verwaltung" };
 export const dynamic = "force-dynamic";
@@ -20,6 +21,8 @@ const BEREICHE = [
   { id: "beratungen", label: "Beratung vor Ort" },
   { id: "firmen", label: "Liftfirmen" },
   { id: "anfragen", label: "Alle Anfragen" },
+  // E-Mail-Adressen ausserhalb des Kantons Zürich oder ohne Angebot (Paket 2, 24.11.2026).
+  { id: "warteliste", label: "Warteliste" },
 ] as const;
 type Bereich = (typeof BEREICHE)[number]["id"];
 
@@ -70,6 +73,12 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         {bereich === "anfragen" && (
           <section className="card">
             <AnfragenListe anfragen={await anfragenListe(d)} />
+          </section>
+        )}
+
+        {bereich === "warteliste" && (
+          <section className="card">
+            <WartelisteTabelle eintraege={await wartelisteLaden(d)} />
           </section>
         )}
       </main>

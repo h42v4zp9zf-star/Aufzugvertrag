@@ -1,4 +1,5 @@
 // Bericht zur Beratung vor Ort als PDF herunterladen (nur Verwaltung).
+import { liegenschaftText } from "@/lib/adresse";
 import { berichtErstellen } from "@/lib/bericht";
 import { anlageAusCheckliste, checklisteBereinigen, leereCheckliste } from "@/lib/checkliste";
 import { KONTAKT_EMAIL, MARKE, VERANTWORTLICH } from "@/lib/config";
@@ -26,7 +27,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     marke: MARKE,
     kontaktEmail: KONTAKT_EMAIL,
     berater: VERANTWORTLICH,
-    kunde: { name: b.name, email: b.email, telefon: b.telefon, adresse: b.adresse },
+    kunde: { name: b.name, email: b.email, telefon: b.telefon, adresse: liegenschaftText(b) },
     termin: b.termin_datum && b.termin_zeit ? terminText(b.termin_datum, b.termin_zeit) : null,
     daten,
     bilder: await vorschauBilder(d, b.id),

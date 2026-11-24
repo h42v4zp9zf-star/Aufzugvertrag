@@ -28,6 +28,10 @@ export interface Anfrage {
   kunde_email: string;
   kunde_telefon: string;
   kunde_adresse: string;
+  /** Firma oder Verwaltung (freiwillig, seit 24.11.2026). */
+  kunde_firma: string;
+  /** Leer = wie die Adresse der Liegenschaft. */
+  rechnungsadresse: string;
   erstellt_am: Date;
 }
 
@@ -190,12 +194,23 @@ export async function aktivePreismodelle(d: Db): Promise<Preismodell[]> {
 
 export async function anfrageAnlegen(
   d: Db,
-  a: { kontoId: number; stufe: Stufe; preisChf: number; anlage: Anlage; name: string; email: string; telefon: string; adresse: string },
+  a: {
+    kontoId: number;
+    stufe: Stufe;
+    preisChf: number;
+    anlage: Anlage;
+    name: string;
+    email: string;
+    telefon: string;
+    adresse: string;
+    firma?: string;
+    rechnungsadresse?: string;
+  },
 ): Promise<number> {
   const { rows } = await d.query<{ id: number }>(
-    `INSERT INTO anfragen (konto_id, stufe, preis_chf, anlage, kunde_name, kunde_email, kunde_telefon, kunde_adresse)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-    [a.kontoId, a.stufe, a.preisChf, JSON.stringify(a.anlage), a.name, a.email, a.telefon, a.adresse],
+    `INSERT INTO anfragen (konto_id, stufe, preis_chf, anlage, kunde_name, kunde_email, kunde_telefon, kunde_adresse, kunde_firma, rechnungsadresse)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
+    [a.kontoId, a.stufe, a.preisChf, JSON.stringify(a.anlage), a.name, a.email, a.telefon, a.adresse, a.firma ?? "", a.rechnungsadresse ?? ""],
   );
   return rows[0].id;
 }
@@ -206,6 +221,12 @@ export interface Beratung {
   email: string;
   telefon: string;
   adresse: string;
+  /** PLZ der Liegenschaft (seit 24.11.2026, bei älteren Buchungen leer). */
+  plz: string;
+  /** Firma oder Verwaltung (freiwillig). */
+  firma: string;
+  /** Leer = wie die Adresse der Liegenschaft. */
+  rechnungsadresse: string;
   anzahl_aufzuege: number;
   bemerkung: string;
   /** „JJJJ-MM-TT“, bei älteren Buchungen ohne Termin null */
@@ -245,6 +266,9 @@ export async function beratungAnlegen(
     email: string;
     telefon: string;
     adresse: string;
+    plz?: string;
+    firma?: string;
+    rechnungsadresse?: string;
     anzahlAufzuege: number;
     bemerkung: string;
     termin?: { datum: string; zeit: string };
@@ -257,8 +281,8 @@ export async function beratungAnlegen(
     // wird auch kein Dokument gespeichert.
     const { rows } = await d.query<{ id: number }>(
       `WITH b AS (
-         INSERT INTO beratungen (name, email, telefon, adresse, anzahl_aufzuege, bemerkung, termin_datum, termin_zeit)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id
+         INSERT INTO beratungen (name, email, telefon, adresse, anzahl_aufzuege, bemerkung, termin_datum, termin_zeit, plz, firma, rechnungsadresse)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $12, $13, $14) RETURNING id
        ), dok AS (
          INSERT INTO beratung_dokumente (beratung_id, dateiname, typ, groesse, inhalt)
          SELECT b.id, x.dateiname, x.typ, octet_length(x.inhalt), x.inhalt
@@ -277,6 +301,9 @@ export async function beratungAnlegen(
         dok.map((x) => x.dateiname),
         dok.map((x) => x.typ),
         dok.map((x) => x.inhalt),
+        b.plz ?? "",
+        b.firma ?? "",
+        b.rechnungsadresse ?? "",
       ],
     );
     return rows[0].id;
@@ -286,7 +313,7 @@ export async function beratungAnlegen(
   }
 }
 
-const BERATUNG_SPALTEN = `id, name, email, telefon, adresse, anzahl_aufzuege, bemerkung,
+const BERATUNG_SPALTEN = `id, name, email, telefon, adresse, plz, firma, rechnungsadresse, anzahl_aufzuege, bemerkung,
   to_char(termin_datum, 'YYYY-MM-DD') AS termin_datum, termin_zeit, erstellt_am,
   COALESCE((SELECT json_agg(json_build_object('id', x.id, 'dateiname', x.dateiname, 'groesse', x.groesse) ORDER BY x.id)
               FROM beratung_dokumente x WHERE x.beratung_id = beratungen.id), '[]'::json) AS dokumente,
@@ -466,4 +493,30 @@ export async function unterlageLaden(d: Db, id: number): Promise<{ konto_id: num
 export async function unterlageLoeschen(d: Db, kontoId: number, id: number): Promise<boolean> {
   const { rows } = await d.query<{ id: number }>("DELETE FROM firmen_dokumente WHERE id = $1 AND konto_id = $2 RETURNING id", [id, kontoId]);
   return rows.length > 0;
+}
+
+// Warteliste (Paket 2, Verbesserungen Nr. 8 und 23, 24.11.2026).
+export type WartelisteGrund = "ausserhalb" | "kein_angebot" | "beratung_ausserhalb";
+export const WARTELISTE_GRUENDE: Record<WartelisteGrund, string> = {
+  ausserhalb: "Ausserhalb des Kantons Zürich",
+  kein_angebot: "Noch kein Angebot in der Region",
+  beratung_ausserhalb: "Beratung ausserhalb des Kantons Zürich",
+};
+
+export interface WartelisteEintrag {
+  id: number;
+  email: string;
+  plz: string;
+  grund: WartelisteGrund;
+  erstellt_am: Date;
+}
+
+/** Speichert die Adresse; ist sie für diese PLZ und diesen Grund schon da, passiert nichts. */
+export async function wartelisteEintragen(d: Db, e: { email: string; plz: string; grund: WartelisteGrund }): Promise<void> {
+  await d.query("INSERT INTO warteliste (email, plz, grund) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING", [e.email, e.plz, e.grund]);
+}
+
+export async function wartelisteLaden(d: Db): Promise<WartelisteEintrag[]> {
+  const { rows } = await d.query<WartelisteEintrag>("SELECT id, email, plz, grund, erstellt_am FROM warteliste ORDER BY erstellt_am DESC, id DESC");
+  return rows;
 }

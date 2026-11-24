@@ -8,7 +8,9 @@ import { Header } from "@/components/Header";
 import { toParams } from "@/lib/anlageParams";
 import { HerstellerWahl } from "./HerstellerWahl";
 import type { Anlage, Antrieb, JaNeinUnbekannt } from "@/lib/pricing";
+import { MARKE } from "@/lib/config";
 import { AUFZUGSARTEN, GEBAEUDETYPEN } from "@/lib/stammdaten";
+import { imKantonZuerich } from "@/lib/zuerich";
 
 const ARTEN = AUFZUGSARTEN;
 const ANTRIEBE: { value: Antrieb; label: string }[] = [
@@ -184,6 +186,12 @@ export function AnlageFormular({ start }: { start: Anlage | null }) {
                 <input type="number" min={1} value={anzahl} onChange={(e) => setAnzahl(e.target.value)} required />
               </label>
             </div>
+            {/^\d{4}$/.test(plz.trim()) && !imKantonZuerich(plz) && (
+              <p className="hint" role="status">
+                {MARKE} gibt es zurzeit nur im Kanton Zürich. Wenn Sie weitermachen, können Sie am Schluss Ihre E-Mail-Adresse hinterlassen. Wir
+                melden uns, sobald wir in Ihrer Region starten.
+              </p>
+            )}
           </fieldset>
 
           <fieldset className="group">

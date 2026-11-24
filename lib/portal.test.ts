@@ -10,7 +10,7 @@ function formular(werte: Record<string, string | string[]>): FormData {
 }
 
 const GUELTIG = {
-  plz: ["8", "9"],
+  bezirk: ["Zürich", "Uster", "Zürich", "Gibt es nicht"],
   hersteller_alle: "on",
   antrieb_seil: "on",
   standard_angeboten: "on",
@@ -53,7 +53,8 @@ test("Gültiges Preisformular ergibt ein Preismodell", () => {
   const r = leseFormular(formular(GUELTIG));
   assert.deepEqual(r.fehler, []);
   assert.equal(r.veroeffentlicht, true);
-  assert.deepEqual(r.daten?.plzPraefixe, ["8", "9"]);
+  assert.deepEqual(r.daten?.bezirke, ["Zürich", "Uster"], "doppelte und unbekannte Bezirke fallen weg");
+  assert.equal(r.daten?.plzPraefixe, undefined);
   assert.equal(r.daten?.hersteller, "alle");
   assert.deepEqual(r.daten?.antriebe, ["seil"]);
   assert.deepEqual(r.daten?.pakete, [

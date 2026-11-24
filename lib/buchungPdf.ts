@@ -2,7 +2,9 @@
 // einer Buchung „Beratung vor Ort“ bzw. einer angenommenen Offerte. Gleicher Stil wie der Bericht.
 
 import { PDFDocument, StandardFonts, type PDFFont, type PDFImage } from "pdf-lib";
+import { liegenschaftText } from "./adresse.ts";
 import { BREITE, GRAU, LINIE, RAND, Seiten, pdfText } from "./bericht.ts";
+import { inklMwstText } from "./mwst.ts";
 import { dauerText, fristText, WARTUNGEN_PRO_STUFE, type Anlage, type Stufe } from "./pricing.ts";
 
 interface Grundangaben {
@@ -17,7 +19,13 @@ export interface Kunde {
   email: string;
   telefon: string;
   adresse: string;
+  /** PLZ der Liegenschaft, wenn separat erfasst (Beratung, seit 24.11.2026). */
+  plz?: string;
+  /** Rechnungsangaben (Paket 2, Verbesserung Nr. 3): Firma oder Verwaltung, Rechnungsadresse (leer = wie Liegenschaft). */
+  firma?: string;
+  rechnungsadresse?: string;
 }
+
 
 export interface BeratungPdfEingabe extends Grundangaben {
   /** z. B. „Mittwoch, 25. November 2026, 09:00–10:00 Uhr“ */
@@ -117,13 +125,15 @@ function kundeZeichnen(s: Seiten, k: Kunde, titel = "Kunde") {
   s.zeile("Name", k.name);
   s.zeile("E-Mail", k.email);
   s.zeile("Telefon", k.telefon);
-  s.zeile("Adresse der Liegenschaft", k.adresse);
+  if (k.firma?.trim()) s.zeile("Firma oder Verwaltung", k.firma.trim());
+  s.zeile("Adresse der Liegenschaft", liegenschaftText(k));
+  s.zeile("Rechnungsadresse", k.rechnungsadresse?.trim() || "Wie Adresse der Liegenschaft");
 }
 
 export async function beratungPdf(e: BeratungPdfEingabe): Promise<Uint8Array> {
   const { pdf, s, font } = await starten(e, "Neue Buchung: Beratung vor Ort", e.termin, e.gebuchtAm);
   s.zeile("Termin", e.termin);
-  s.zeile("Preis", `${chfPdf(e.preisChf)} (Fixpreis)`);
+  s.zeile("Preis", `${chfPdf(e.preisChf)} exkl. MWST (Fixpreis), ${inklMwstText(e.preisChf)}`);
   s.zeile("Gebucht am", zeitpunktText(e.gebuchtAm));
   kundeZeichnen(s, e.kunde);
   s.ueberschrift("Anlage");
@@ -163,10 +173,10 @@ export async function anfragePdf(e: AnfragePdfEingabe): Promise<Uint8Array> {
   const { pdf, s, font } = await starten(e, "Angebot angenommen", `${paket} bei ${e.firma}`, e.angenommenAm);
   s.zeile("Liftfirma", e.firma);
   s.zeile("Paket", paket);
-  s.zeile("Preis pro Jahr", chfPdf(e.preisProJahrChf));
+  s.zeile("Preis pro Jahr", `${chfPdf(e.preisProJahrChf)} exkl. MWST, ${inklMwstText(e.preisProJahrChf)}`);
   s.zeile("Vertragsdauer", e.vertragsdauerJahre ? dauerText(e.vertragsdauerJahre) : "Nicht angegeben");
   if (e.vertragsdauerJahre && e.kuendigungsfristMonate) s.zeile("Kündigungsfrist", fristText(e.kuendigungsfristMonate));
-  s.zeile("Vermittlungsgebühr", `${chfPdf(e.gebuehrChf)}, Zahlung per Rechnung`);
+  s.zeile("Vermittlungsgebühr", `${chfPdf(e.gebuehrChf)} exkl. MWST, nur wenn der Vertrag zustande kommt, Zahlung per Rechnung`);
   s.zeile("Angenommen am", zeitpunktText(e.angenommenAm));
   kundeZeichnen(s, e.kunde);
   s.ueberschrift("Anlage");

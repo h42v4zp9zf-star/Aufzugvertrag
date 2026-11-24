@@ -1,4 +1,5 @@
 // Liest und prüft das Preisformular einer Liftfirma.
+import { istBezirk } from "./zuerich.ts";
 import { KUENDIGUNGSFRIST_MONATE, PIKETT, STUFEN, VERTRAGSDAUER_JAHRE, type Antrieb, type Paket, type Pikett, type PreismodellDaten } from "./pricing.ts";
 
 export interface FormLike {
@@ -36,8 +37,8 @@ const an = (form: FormLike, name: string) => form.get(name) === "on";
 export function leseFormular(form: FormLike): FormErgebnis {
   const fehler: string[] = [];
 
-  const plzPraefixe = form.getAll("plz").map(String).filter((k) => /^[1-9]$/.test(k));
-  if (plzPraefixe.length === 0) fehler.push("Einzugsgebiet: mindestens einen PLZ-Kreis wählen.");
+  const bezirke = [...new Set(form.getAll("bezirk").map(String))].filter(istBezirk);
+  if (bezirke.length === 0) fehler.push("Einzugsgebiet: mindestens einen Bezirk wählen.");
 
   const herstellerAlle = an(form, "hersteller_alle");
   const herstellerListe = form.getAll("hersteller").map(String).filter(Boolean);
@@ -79,7 +80,7 @@ export function leseFormular(form: FormLike): FormErgebnis {
   };
 
   const daten: PreismodellDaten = {
-    plzPraefixe,
+    bezirke,
     hersteller: herstellerAlle ? "alle" : herstellerListe,
     antriebe,
     pakete,

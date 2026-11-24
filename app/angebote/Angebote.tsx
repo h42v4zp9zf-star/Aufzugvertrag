@@ -19,7 +19,11 @@ import {
   type Stufe,
 } from "@/lib/pricing";
 import { SpamFalle } from "@/components/SpamFalle";
+import { Warteliste } from "@/components/Warteliste";
+import { BERATUNG_PREIS_CHF, MARKE } from "@/lib/config";
+import { chfRappen, inklMwst, inklMwstText } from "@/lib/mwst";
 import { SPAM_FELD } from "@/lib/spamfalle";
+import { imKantonZuerich } from "@/lib/zuerich";
 import { anfrageSenden } from "./actions";
 
 const STUFE_INFO: Record<Stufe, { name: string; tag: string }> = {
@@ -67,6 +71,8 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
   const [formOffen, setFormOffen] = useState(false);
   const [gesendet, setGesendet] = useState<string | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
+  // Rechnung an die Adresse der Liegenschaft oder eine andere Adresse (Paket 2, Verbesserung Nr. 3).
+  const [rechnungGleich, setRechnungGleich] = useState(true);
   const [laeuft, starte] = useTransition();
   // Feste Leiste unten auf dem Handy (Verbesserung Nr. 15): sichtbar, solange „Ihre Wahl“ weiter unten liegt.
   const wahlRef = useRef<HTMLElement>(null);
@@ -95,6 +101,59 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
     );
   }
 
+  const angabenLink = (
+    <Link href={`/anlage?${params.toString()}`} className="link-muted">
+      Angaben ändern
+    </Link>
+  );
+
+  // Zum Start nur im Kanton Zürich (Paket 2, Verbesserung Nr. 23, Entscheid Dario 24.11.2026).
+  if (!imKantonZuerich(anlage.plz)) {
+    return (
+      <main className="offers">
+        <div className="offers__head">
+          <h1>Zurzeit nur im Kanton Zürich</h1>
+          <p className="lead">
+            {MARKE} vergleicht Wartungsverträge zum Start nur im Kanton Zürich. Die PLZ {anlage.plz} liegt ausserhalb.
+          </p>
+          {angabenLink}
+        </div>
+        <section className="card warteliste-box">
+          <h2>Wir melden uns bei Ihnen</h2>
+          <p className="muted">Hinterlassen Sie Ihre E-Mail-Adresse. Wir schreiben Ihnen, sobald {MARKE} in Ihrer Region verfügbar ist.</p>
+          <Warteliste plz={anlage.plz} grund="ausserhalb" danke={`Danke! Wir melden uns, sobald ${MARKE} in Ihrer Region verfügbar ist.`} />
+        </section>
+      </main>
+    );
+  }
+
+  // Keine Sackgasse (Paket 2, Verbesserung Nr. 8): E-Mail hinterlassen oder Beratung vor Ort.
+  if (!beispiel && STUFEN.every((s) => ergebnis[s].length === 0)) {
+    return (
+      <main className="offers">
+        <div className="offers__head">
+          <h1>Noch kein Angebot für Ihre Anlage</h1>
+          <p className="lead">Für Ihre Anlage in {anlage.plz} hat noch keine Liftfirma ein Angebot hinterlegt.</p>
+          {angabenLink}
+        </div>
+        <section className="card warteliste-box">
+          <h2>Wir melden uns bei Ihnen</h2>
+          <p className="muted">Hinterlassen Sie Ihre E-Mail-Adresse. Wir schreiben Ihnen, sobald eine Liftfirma in Ihrer Region mitmacht.</p>
+          <Warteliste plz={anlage.plz} grund="kein_angebot" danke="Danke! Wir melden uns, sobald eine Liftfirma in Ihrer Region mitmacht." />
+        </section>
+        <section className="card warteliste-box">
+          <h2>Lieber persönlich?</h2>
+          <p className="muted">
+            Unsere Fachperson schaut Ihre Anlage vor Ort an und berät Sie. Fixpreis {chf(BERATUNG_PREIS_CHF)} exkl. MWST.
+          </p>
+          <Link href="/beratung" className="btn btn--outline">
+            Beratung vor Ort buchen
+          </Link>
+        </section>
+      </main>
+    );
+  }
+
   const angebotFuer = (s: Stufe): Angebot | undefined => {
     const liste = ergebnis[s];
     return liste.find((a) => a.firma === gewaehlt[s]) ?? liste[0];
@@ -107,8 +166,8 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
   // Bei mehreren Aufzügen auch den Preis pro Aufzug zeigen (Verbesserung Nr. 16).
   const preisText = (a: Angebot) =>
     anzahlLifte > 1
-      ? `pro Jahr für ${anzahlLifte} Aufzüge (${chf(Math.round(a.preisProJahrChf / anzahlLifte))} pro Aufzug), festes Angebot von ${a.firma}`
-      : `pro Jahr, festes Angebot von ${a.firma}`;
+      ? `pro Jahr für ${anzahlLifte} Aufzüge (${chf(Math.round(a.preisProJahrChf / anzahlLifte))} pro Aufzug), exkl. MWST, festes Angebot von ${a.firma}`
+      : `pro Jahr exkl. MWST, festes Angebot von ${a.firma}`;
   const leisteZeigen = !!aktuell && wahlUnten && !formOffen && gesendet !== `${stufe}:${aktuell.firma}`;
 
   function zurWahl() {
@@ -123,9 +182,7 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
         <p className="lead">
           {anlage.anzahlAufzuege} × {anlage.aufzugsart} · {anlage.haltestellen} Haltestellen{anlage.attika ? ` · ${anlage.attika === "ja" ? "mit" : "ohne"} Attika` : ""}{anlage.sicherheitsdispositiv === "ja" ? " · mit Sicherheitsdispositiv" : ""} · {herstellerText} · PLZ {anlage.plz}
         </p>
-        <Link href={`/anlage?${params.toString()}`} className="link-muted">
-          Angaben ändern
-        </Link>
+        {angabenLink}
         {beispiel && (
           <p className="notice">Vorschau mit Beispielpreisen erfundener Liftfirmen. Echte Angebote folgen, sobald Liftfirmen ihre Preise hinterlegt haben.</p>
         )}
@@ -147,6 +204,7 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
                 <div>
                   <div className="price">{chf(a.preisProJahrChf)}</div>
                   <p className="price-sub">{preisText(a)}</p>
+                  <p className="price-sub">{inklMwstText(a.preisProJahrChf)}</p>
                   <p className="price-sub">
                     {ergebnis[s].length === 1 ? "1 Angebot" : `${ergebnis[s].length} Angebote`} in dieser Stufe
                   </p>
@@ -204,7 +262,7 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
               <thead>
                 <tr>
                   <th>Liftfirma</th>
-                  <th>Preis pro Jahr</th>
+                  <th>Preis pro Jahr exkl. MWST</th>
                   <th>Reaktionszeit</th>
                   <th>Pikett</th>
                   <th>Vertragsdauer</th>
@@ -218,7 +276,7 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
                 {weitere.map((a) => (
                   <tr key={a.firma}>
                     <td data-label="Liftfirma">{a.firma}</td>
-                    <td data-label="Preis pro Jahr">{chf(a.preisProJahrChf)}</td>
+                    <td data-label="Preis pro Jahr exkl. MWST">{chf(a.preisProJahrChf)}</td>
                     <td data-label="Reaktionszeit">{a.reaktionszeitStd} Std.</td>
                     <td data-label="Pikett">{PIKETT_KURZ[a.pikett]}</td>
                     <td data-label="Vertragsdauer">{a.vertragsdauerJahre ? dauerText(a.vertragsdauerJahre) : "nicht angegeben"}</td>
@@ -244,12 +302,12 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
           <div>
             <div className="summary__label">Ihre Wahl</div>
             <div className="summary__main">
-              {STUFE_INFO[stufe].name} · {aktuell.firma} · {chf(aktuell.preisProJahrChf)} / Jahr
+              {STUFE_INFO[stufe].name} · {aktuell.firma} · {chf(aktuell.preisProJahrChf)} / Jahr exkl. MWST
             </div>
             <p className="summary__note">
               {gesendet === `${stufe}:${aktuell.firma}`
                 ? `Danke! Ihre Anfrage ist bei ${aktuell.firma}. Die Firma meldet sich bei Ihnen für den Vertrag.`
-                : `Vermittlungsgebühr ${chf(VERMITTLUNGSGEBUEHR_CHF)}, Zahlung per Rechnung. Den Vertrag schliessen Sie direkt mit ${aktuell.firma}.`}
+                : `${inklMwstText(aktuell.preisProJahrChf)} pro Jahr. Den Vertrag schliessen Sie direkt mit ${aktuell.firma}. Kommt er zustande, kostet die Vermittlung ${chf(VERMITTLUNGSGEBUEHR_CHF)} exkl. MWST, per Rechnung.`}
             </p>
           </div>
           {gesendet !== `${stufe}:${aktuell.firma}` && !formOffen && (
@@ -278,6 +336,10 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
                     email: String(f.get("email") ?? ""),
                     telefon: String(f.get("telefon") ?? ""),
                     adresse: String(f.get("adresse") ?? ""),
+                    firma: String(f.get("firma") ?? ""),
+                    rechnungAndere: !rechnungGleich,
+                    rechnungsadresse: rechnungGleich ? "" : String(f.get("rechnungsadresse") ?? ""),
+                    gebuehrBestaetigt: f.get("gebuehr") === "on",
                     webseite: String(f.get(SPAM_FELD) ?? ""),
                   });
                   if (r.ok) {
@@ -298,12 +360,31 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
                 <input name="email" type="email" autoComplete="email" required />
               </label>
               <label className="field">
-                Telefon
-                <input name="telefon" type="tel" autoComplete="tel" />
+                Telefon *
+                <input name="telefon" type="tel" autoComplete="tel" required />
               </label>
               <label className="field">
-                Adresse der Liegenschaft
-                <input name="adresse" autoComplete="street-address" />
+                Adresse der Liegenschaft *
+                <input name="adresse" autoComplete="street-address" placeholder={`Strasse Nr., ${anlage.plz} Ort`} required />
+              </label>
+              <label className="field">
+                Firma oder Verwaltung (freiwillig)
+                <input name="firma" autoComplete="organization" />
+              </label>
+              <label className="check" style={{ gridColumn: "1 / -1" }}>
+                <input type="checkbox" checked={rechnungGleich} onChange={(e) => setRechnungGleich(e.target.checked)} />
+                Rechnung an die Adresse der Liegenschaft
+              </label>
+              {!rechnungGleich && (
+                <label className="field" style={{ gridColumn: "1 / -1" }}>
+                  Rechnungsadresse *
+                  <textarea name="rechnungsadresse" rows={3} placeholder={"Name oder Firma\nStrasse Nr.\nPLZ Ort"} required />
+                </label>
+              )}
+              <label className="check" style={{ gridColumn: "1 / -1" }}>
+                <input type="checkbox" name="gebuehr" required />
+                Ich nehme zur Kenntnis: Kommt der Vertrag zustande, kostet die Vermittlung {chf(VERMITTLUNGSGEBUEHR_CHF)} exkl. MWST (
+                {chfRappen(inklMwst(VERMITTLUNGSGEBUEHR_CHF))} inkl. MWST), zahlbar per Rechnung.
               </label>
               <SpamFalle />
               {fehler && (
@@ -325,7 +406,7 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
             <strong>
               {STUFE_INFO[stufe].name} · {chf(aktuell.preisProJahrChf)} / Jahr
             </strong>
-            <span>{aktuell.firma}</span>
+            <span>exkl. MWST · {aktuell.firma}</span>
           </div>
           <button type="button" className="btn btn--dark" onClick={zurWahl}>
             Angebot annehmen

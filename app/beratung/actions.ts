@@ -11,6 +11,7 @@ import { beratungAnlegen, TerminVergeben, type NeuesDokument } from "@/lib/repo"
 import { ipSchluessel, MELDUNG_ZU_VIELE, versuchMerken, zuViele } from "@/lib/schutz";
 import { logoLaden, seitenAdresse } from "@/lib/seite";
 import { istSpam, MELDUNG_SPAM, SPAM_FELD } from "@/lib/spamfalle";
+import { imKantonZuerich } from "@/lib/zuerich";
 import { heuteInZuerich, terminGueltig, terminText } from "@/lib/termine";
 
 export type BeratungErgebnis = { ok: true } | { ok: false; fehler: string; vergeben?: boolean };
@@ -27,16 +28,25 @@ export async function beratungSenden(f: FormData): Promise<BeratungErgebnis> {
   const email = text(f, "email", 200);
   const telefon = text(f, "telefon", 50);
   const adresse = text(f, "adresse", 300);
+  const plz = text(f, "plz", 4);
+  // Rechnungsangaben (Paket 2, Verbesserung Nr. 3): Rechnungsadresse nur, wenn nicht die Liegenschaft.
+  const firma = text(f, "firma", 200);
+  const rechnungAndere = f.get("rechnung_gleich") !== "on";
+  const rechnungsadresse = rechnungAndere ? text(f, "rechnungsadresse", 500) : "";
   const bemerkung = text(f, "bemerkung", 2000);
   const anzahl = Number(text(f, "anzahl", 5) || "1");
+  if (!/^\d{4}$/.test(plz)) return { ok: false, fehler: "Bitte die PLZ der Liegenschaft angeben." };
+  // Zum Start nur im Kanton Zürich (Paket 2, Verbesserung Nr. 23).
+  if (!imKantonZuerich(plz)) return { ok: false, fehler: "Die Beratung vor Ort bieten wir zurzeit nur im Kanton Zürich an." };
   if (!terminGueltig(datum, zeit, heuteInZuerich()))
     return { ok: false, fehler: "Bitte wählen Sie einen freien Termin (Montag bis Freitag, 7 bis 17 Uhr, ab morgen)." };
   if (!name) return { ok: false, fehler: "Bitte Ihren Namen angeben." };
   if (!EMAIL.test(email)) return { ok: false, fehler: "Bitte eine gültige E-Mail-Adresse angeben." };
   if (!telefon) return { ok: false, fehler: "Bitte eine Telefonnummer angeben, damit wir Sie erreichen können." };
   if (!adresse) return { ok: false, fehler: "Bitte die Adresse der Liegenschaft angeben." };
+  if (rechnungAndere && !rechnungsadresse) return { ok: false, fehler: "Bitte die Rechnungsadresse angeben." };
   if (!Number.isInteger(anzahl) || anzahl < 1 || anzahl > 50) return { ok: false, fehler: "Anzahl Aufzüge: bitte eine Zahl zwischen 1 und 50." };
-  if (f.get("pauschale") !== "on") return { ok: false, fehler: `Bitte bestätigen Sie den Fixpreis von CHF ${BERATUNG_PREIS_CHF}.` };
+  if (f.get("pauschale") !== "on") return { ok: false, fehler: `Bitte bestätigen Sie den Fixpreis von CHF ${BERATUNG_PREIS_CHF} exkl. MWST.` };
 
   // Freiwillige Dokumente: Anzahl, Gesamtgrösse und Dateityp (am Inhalt erkannt) prüfen.
   const dateien = f.getAll("dokumente").filter((x): x is File => typeof x !== "string" && x.size > 0);
@@ -59,7 +69,19 @@ export async function beratungSenden(f: FormData): Promise<BeratungErgebnis> {
   await versuchMerken(d, "beratung", ip);
 
   try {
-    await beratungAnlegen(d, { name, email, telefon, adresse, anzahlAufzuege: anzahl, bemerkung, termin: { datum, zeit }, dokumente });
+    await beratungAnlegen(d, {
+      name,
+      email,
+      telefon,
+      adresse,
+      plz,
+      firma,
+      rechnungsadresse,
+      anzahlAufzuege: anzahl,
+      bemerkung,
+      termin: { datum, zeit },
+      dokumente,
+    });
   } catch (e) {
     if (e instanceof TerminVergeben)
       return { ok: false, vergeben: true, fehler: "Dieser Termin wurde soeben vergeben. Bitte wählen Sie eine andere Zeit." };
@@ -79,7 +101,7 @@ export async function beratungSenden(f: FormData): Promise<BeratungErgebnis> {
         datum,
         zeit,
         termin: terminText(datum, zeit),
-        kunde: { name, email, telefon, adresse },
+        kunde: { name, email, telefon, adresse, plz, firma, rechnungsadresse },
         anzahlAufzuege: anzahl,
         bemerkung,
         preisChf: BERATUNG_PREIS_CHF,

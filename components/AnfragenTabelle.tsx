@@ -16,7 +16,7 @@ export function AnfragenTabelle({ anfragen, mitFirma = false }: { anfragen: Anfr
             <th>Kunde</th>
             <th>Anlage</th>
             <th>Paket</th>
-            <th>Preis pro Jahr</th>
+            <th>Preis pro Jahr exkl. MWST</th>
             {mitFirma && <th>Gebühr</th>}
           </tr>
         </thead>
@@ -27,6 +27,12 @@ export function AnfragenTabelle({ anfragen, mitFirma = false }: { anfragen: Anfr
               {mitFirma && <td>{a.firma}</td>}
               <td>
                 {a.kunde_name}
+                {a.kunde_firma && (
+                  <>
+                    <br />
+                    {a.kunde_firma}
+                  </>
+                )}
                 <br />
                 <a href={`mailto:${a.kunde_email}`} style={{ textDecoration: "underline" }}>
                   {a.kunde_email}
@@ -41,6 +47,14 @@ export function AnfragenTabelle({ anfragen, mitFirma = false }: { anfragen: Anfr
                   <>
                     <br />
                     <span className="muted">{a.kunde_adresse}</span>
+                  </>
+                )}
+                {a.rechnungsadresse && (
+                  <>
+                    <br />
+                    <span className="muted" style={{ whiteSpace: "pre-line" }}>
+                      Rechnung an: {a.rechnungsadresse}
+                    </span>
                   </>
                 )}
               </td>

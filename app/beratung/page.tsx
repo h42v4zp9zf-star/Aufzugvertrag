@@ -42,7 +42,7 @@ export default async function BeratungPage() {
           <h1>Beratung vor Ort</h1>
           <p className="muted">
             Keine Anlagedaten zur Hand? Unsere Fachperson kommt vorbei, erfasst die Anlage und erstellt Ihren Vergleich. Fixpreis CHF{" "}
-            {BERATUNG_PREIS_CHF}, ohne Zusatzkosten. Wählen Sie direkt einen freien Termin.
+            {BERATUNG_PREIS_CHF} exkl. MWST, ohne Zusatzkosten. Zurzeit im Kanton Zürich. Wählen Sie direkt einen freien Termin.
           </p>
         </div>
         <BeratungForm heute={heute} belegt={besetzt} />

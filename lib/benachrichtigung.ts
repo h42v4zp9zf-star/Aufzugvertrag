@@ -1,7 +1,8 @@
 // Inhalt der E-Mails an Dario (Entscheid 24.11.2026): Betreff mit Termin bzw. Paket und Name,
 // kurzer Text, PDF mit allen Angaben und bei der Beratung die hochgeladenen Dokumente als Anhang.
 
-import { anfragePdf, beratungPdf, chfPdf, groesseKurz, type AnfragePdfEingabe, type BeratungPdfEingabe } from "./buchungPdf.ts";
+import { liegenschaftText } from "./adresse.ts";
+import { anfragePdf, beratungPdf, chfPdf, groesseKurz, type AnfragePdfEingabe, type BeratungPdfEingabe, type Kunde } from "./buchungPdf.ts";
 import type { Anhang, Mail } from "./mail.ts";
 import { dauerText, fristText } from "./pricing.ts";
 
@@ -15,6 +16,16 @@ export function pdfDateiname(...teile: string[]): string {
 
 const zeile = (label: string, wert: string) => (wert.trim() ? `${label}: ${wert.trim()}` : null);
 
+/** Kontakt- und Rechnungsangaben des Kunden als Textzeilen (Paket 2, Verbesserung Nr. 3). */
+const kundeZeilen = (k: Kunde) => [
+  zeile("Name", k.name),
+  zeile("E-Mail", k.email),
+  zeile("Telefon", k.telefon),
+  zeile("Firma oder Verwaltung", k.firma ?? ""),
+  zeile("Adresse der Liegenschaft", liegenschaftText(k)),
+  zeile("Rechnungsadresse", k.rechnungsadresse?.trim() ? k.rechnungsadresse.replace(/\s*\n\s*/g, ", ") : "wie Adresse der Liegenschaft"),
+];
+
 export async function beratungMail(
   e: BeratungPdfEingabe & { datum: string; zeit: string; dokumenteInhalt: Anhang[]; verwaltungUrl: string | null },
 ): Promise<Mail> {
@@ -23,13 +34,10 @@ export async function beratungMail(
     "Neue Buchung «Beratung vor Ort»",
     "",
     zeile("Termin", e.termin),
-    zeile("Name", e.kunde.name),
-    zeile("E-Mail", e.kunde.email),
-    zeile("Telefon", e.kunde.telefon),
-    zeile("Adresse", e.kunde.adresse),
+    ...kundeZeilen(e.kunde),
     zeile("Anzahl Aufzüge", String(e.anzahlAufzuege)),
     zeile("Bemerkung", e.bemerkung),
-    zeile("Preis", `${chfPdf(e.preisChf)} (Fixpreis)`),
+    zeile("Preis", `${chfPdf(e.preisChf)} exkl. MWST (Fixpreis)`),
     e.dokumente.length
       ? `Dokumente im Anhang: ${e.dokumente.map((d) => `${d.dateiname} (${groesseKurz(d.groesse)})`).join(", ")}`
       : "Keine Dokumente hochgeladen.",
@@ -58,14 +66,11 @@ export async function anfrageMail(e: AnfragePdfEingabe & { verwaltungUrl: string
     "",
     zeile("Liftfirma", e.firma),
     zeile("Paket", paket),
-    zeile("Preis pro Jahr", chfPdf(e.preisProJahrChf)),
+    zeile("Preis pro Jahr", `${chfPdf(e.preisProJahrChf)} exkl. MWST`),
     zeile("Vertragsdauer", dauer),
-    zeile("Vermittlungsgebühr", chfPdf(e.gebuehrChf)),
+    zeile("Vermittlungsgebühr", `${chfPdf(e.gebuehrChf)} exkl. MWST, nur wenn der Vertrag zustande kommt`),
     "",
-    zeile("Name", e.kunde.name),
-    zeile("E-Mail", e.kunde.email),
-    zeile("Telefon", e.kunde.telefon),
-    zeile("Adresse", e.kunde.adresse),
+    ...kundeZeilen(e.kunde),
     "",
     "Alle Angaben zur Anlage stehen im PDF im Anhang.",
     e.verwaltungUrl ? `Verwaltung: ${e.verwaltungUrl}` : null,
