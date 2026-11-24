@@ -19,6 +19,7 @@ import {
   tokenHash,
 } from "@/lib/passwort";
 import { firmaLaden, kontoMitHashPerEmail, passwortLinkAnlegen, passwortLinkKuerzlich, passwortZuruecksetzen } from "@/lib/repo";
+import { ipSchluessel, MELDUNG_ZU_VIELE, versuchMerken, zuViele } from "@/lib/schutz";
 import { seitenAdresse } from "@/lib/seite";
 import { kontoErforderlich } from "@/lib/sitzung";
 
@@ -40,6 +41,10 @@ export async function passwortVergessen(_: PasswortStatus, f: FormData): Promise
   const email = String(f.get("email") ?? "").trim();
   if (!EMAIL.test(email)) return { fehler: ["Bitte eine gültige E-Mail-Adresse angeben."], email };
   const d = await db();
+  // Höchstens 10 Anfragen pro Stunde vom selben Anschluss (Verbesserung Nr. 32).
+  const ip = ipSchluessel(await headers());
+  if (await zuViele(d, "passwort", ip)) return { fehler: [MELDUNG_ZU_VIELE], email };
+  await versuchMerken(d, "passwort", ip);
   const konto = await kontoMitHashPerEmail(d, email);
   // Immer dieselbe Antwort, damit niemand herausfinden kann, welche Firmen registriert sind.
   if (konto && konto.status !== "gesperrt" && !(await passwortLinkKuerzlich(d, konto.id, PASSWORT_LINK_SPERRE_MIN))) {

@@ -6,6 +6,7 @@ import { useMemo, useState, useTransition } from "react";
 import { BERATUNG_PREIS_CHF } from "@/lib/config";
 import { DOKUMENT_TYPEN, DOKUMENTE_MAX_ANZAHL, DOKUMENTE_MAX_BYTES, groesseText } from "@/lib/dokumente";
 import { endzeit, istArbeitstag, kalenderTage, startzeiten, terminSchluessel, terminText, wochentag } from "@/lib/termine";
+import { SpamFalle } from "@/components/SpamFalle";
 import { beratungSenden } from "./actions";
 
 const KURZ = ["Mo", "Di", "Mi", "Do", "Fr"];
@@ -315,6 +316,7 @@ export function BeratungForm({ heute, belegt }: { heute: string; belegt: string[
         <input type="checkbox" name="pauschale" required />
         Ich nehme zur Kenntnis: Die Beratung vor Ort kostet CHF {BERATUNG_PREIS_CHF} (Fixpreis, ohne Zusatzkosten), zahlbar per Rechnung.
       </label>
+      <SpamFalle />
       {fehler && (
         <p className="error" role="alert">
           {fehler}

@@ -9,7 +9,9 @@ import { db, dbKonfiguriert } from "@/lib/db";
 import { benachrichtigen } from "@/lib/mail";
 import { deckt, preisProAufzug, STUFEN, VERMITTLUNGSGEBUEHR_CHF, type Stufe } from "@/lib/pricing";
 import { aktivePreismodelle, anfrageAnlegen } from "@/lib/repo";
+import { ipSchluessel, MELDUNG_ZU_VIELE, versuchMerken, zuViele } from "@/lib/schutz";
 import { logoLaden, seitenAdresse } from "@/lib/seite";
+import { istSpam, MELDUNG_SPAM } from "@/lib/spamfalle";
 
 export interface AnfrageEingabe {
   anlageParams: string;
@@ -19,6 +21,8 @@ export interface AnfrageEingabe {
   email: string;
   telefon: string;
   adresse: string;
+  /** Unsichtbares Feld gegen Spam (Verbesserung Nr. 32), muss leer sein. */
+  webseite?: string;
 }
 
 export type AnfrageErgebnis = { ok: true } | { ok: false; fehler: string };
@@ -27,6 +31,7 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function anfrageSenden(e: AnfrageEingabe): Promise<AnfrageErgebnis> {
   if (!dbKonfiguriert()) return { ok: false, fehler: "Anfragen sind in der Vorschau noch nicht möglich." };
+  if (istSpam(e.webseite)) return { ok: false, fehler: `${MELDUNG_SPAM} Oder schreiben Sie uns an ${KONTAKT_EMAIL}.` };
   const name = String(e.name ?? "").trim().slice(0, 200);
   const email = String(e.email ?? "").trim().slice(0, 200);
   const telefon = String(e.telefon ?? "").trim().slice(0, 50);
@@ -48,6 +53,12 @@ export async function anfrageSenden(e: AnfrageEingabe): Promise<AnfrageErgebnis>
   const proAufzug = preisProAufzug(modell, paket, anlage, []);
   if (proAufzug === null) return { ok: false, fehler: "Dieses Angebot ist nicht mehr verfügbar." };
 
+  // Höchstens 10 Anfragen pro Stunde vom selben Anschluss (Verbesserung Nr. 32).
+  const h = await headers();
+  const ip = ipSchluessel(h);
+  if (await zuViele(d, "anfrage", ip)) return { ok: false, fehler: `${MELDUNG_ZU_VIELE} Oder schreiben Sie uns an ${KONTAKT_EMAIL}.` };
+  await versuchMerken(d, "anfrage", ip);
+
   const preisChf = Math.round(proAufzug * Math.max(1, anlage.anzahlAufzuege));
   await anfrageAnlegen(d, {
     kontoId: modell.firmaId!,
@@ -62,7 +73,7 @@ export async function anfrageSenden(e: AnfrageEingabe): Promise<AnfrageErgebnis>
 
   // E-Mail an Dario mit PDF der Anfrage, erst nach der Antwort an den Kunden.
   const angenommenAm = new Date();
-  const adresseSeite = seitenAdresse(await headers());
+  const adresseSeite = seitenAdresse(h);
   const stufe = e.stufe;
   after(() =>
     benachrichtigen("Angebot angenommen", async () =>

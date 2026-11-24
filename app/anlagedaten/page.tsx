@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
-import { MARKE } from "@/lib/config";
 
 export const metadata: Metadata = {
-  title: `Wo finde ich die Angaben zu meinem Aufzug? – ${MARKE}`,
+  title: "Wo finde ich die Angaben zu meinem Aufzug?",
   description: "Typenschild, Maschinenraum, Wartungsvertrag, Kontrollberichte: hier finden Sie die Angaben zu Ihrer Aufzugsanlage.",
 };
 
@@ -83,7 +81,6 @@ export default function Anlagedaten() {
           </Link>
         </div>
       </main>
-      <Footer />
     </>
   );
 }

@@ -6,7 +6,8 @@
   --field: #d0d1d2;
   --white: #ffffff;
   --radius: 6px;
-  --font: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* --font-inter: mitgelieferte Schrift aus app/layout.tsx (Verbesserung Nr. 29) */
+  --font: var(--font-inter), Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -148,11 +149,35 @@ td { padding: 14px 8px; border-bottom: 1px solid var(--line); }
 td.right, th.right { text-align: right; }
 .linkbtn { background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; font-size: 14px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.spamfalle { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
 
 .summary { background: var(--white); border: 1px solid var(--line); border-radius: 12px; padding: 32px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px; }
 .summary__label { font-size: 13px; color: var(--muted); }
 .summary__main { font-size: 22px; font-weight: 500; margin: 6px 0; }
 .summary__note { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+/* Handy: feste Leiste mit der Wahl (Verbesserung Nr. 15), weitere Angebote als Karten */
+.wahl-leiste { display: none; }
+@media (max-width: 700px) {
+  .offers { padding-bottom: 128px; }
+  .wahl-leiste { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px calc(12px + env(safe-area-inset-bottom)); background: var(--white); border-top: 1px solid var(--line); box-shadow: 0 -4px 16px rgba(0, 0, 0, .06); }
+  .wahl-leiste__text { display: flex; flex-direction: column; min-width: 0; font-size: 13px; color: var(--muted); }
+  .wahl-leiste__text strong { font-size: 15px; font-weight: 500; color: var(--ink); }
+  .wahl-leiste__text span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .wahl-leiste .btn { flex: none; padding: 0 18px; }
+}
+@media (max-width: 640px) {
+  .tabelle-karten { min-width: 0; }
+  .tabelle-karten thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .tabelle-karten, .tabelle-karten tbody, .tabelle-karten tr, .tabelle-karten td { display: block; width: 100%; }
+  .tabelle-karten tr { border: 1px solid var(--field); border-radius: 12px; padding: 16px 20px; margin-bottom: 12px; }
+  .tabelle-karten td { display: flex; justify-content: space-between; gap: 16px; padding: 6px 0; border: 0; text-align: right; }
+  .tabelle-karten td::before { content: attr(data-label); color: var(--muted); text-align: left; }
+  .tabelle-karten td:first-child { font-size: 16px; font-weight: 500; padding-bottom: 10px; text-align: left; }
+  .tabelle-karten td:first-child::before, .tabelle-karten td.right::before { content: none; }
+  .tabelle-karten td.right { padding-top: 12px; }
+  .tabelle-karten td.right .linkbtn { width: 100%; min-height: 44px; border: 1px solid var(--ink); border-radius: var(--radius); text-decoration: none; font-weight: 500; }
+}
 
 @media (min-width: 960px) {
   .config { align-items: flex-start; }

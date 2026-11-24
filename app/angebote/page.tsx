@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Header } from "@/components/Header";
 import { BEISPIELMODELLE } from "@/lib/beispielmodelle";
@@ -6,6 +7,7 @@ import type { Preismodell } from "@/lib/pricing";
 import { aktivePreismodelle } from "@/lib/repo";
 import { Angebote } from "./Angebote";
 
+export const metadata: Metadata = { title: "Ihre Angebote" };
 export const dynamic = "force-dynamic";
 
 // Solange keine Liftfirma Preise veröffentlicht hat, zeigen wir Beispielpreise.

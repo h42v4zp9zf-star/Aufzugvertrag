@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useMemo, useState, useTransition, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition, type FormEvent } from "react";
 import { fromParams } from "@/lib/anlageParams";
 import {
   chf,
@@ -18,6 +18,8 @@ import {
   type Preismodell,
   type Stufe,
 } from "@/lib/pricing";
+import { SpamFalle } from "@/components/SpamFalle";
+import { SPAM_FELD } from "@/lib/spamfalle";
 import { anfrageSenden } from "./actions";
 
 const STUFE_INFO: Record<Stufe, { name: string; tag: string }> = {
@@ -66,6 +68,16 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
   const [gesendet, setGesendet] = useState<string | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
   const [laeuft, starte] = useTransition();
+  // Feste Leiste unten auf dem Handy (Verbesserung Nr. 15): sichtbar, solange „Ihre Wahl“ weiter unten liegt.
+  const wahlRef = useRef<HTMLElement>(null);
+  const [wahlUnten, setWahlUnten] = useState(true);
+  useEffect(() => {
+    const el = wahlRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const beobachter = new IntersectionObserver(([e]) => setWahlUnten(!e.isIntersecting && e.boundingClientRect.top > 0));
+    beobachter.observe(el);
+    return () => beobachter.disconnect();
+  });
 
   const ergebnis = useMemo(() => (anlage ? vergleiche(anlage, modelle) : null), [anlage, modelle]);
 
@@ -91,6 +103,18 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
   const weitere = ergebnis[stufe].filter((a) => a.firma !== aktuell?.firma);
 
   const herstellerText = anlage.hersteller === "unbekannt" ? "Hersteller unbekannt" : anlage.hersteller;
+  const anzahlLifte = Math.max(1, anlage.anzahlAufzuege);
+  // Bei mehreren Aufzügen auch den Preis pro Aufzug zeigen (Verbesserung Nr. 16).
+  const preisText = (a: Angebot) =>
+    anzahlLifte > 1
+      ? `pro Jahr für ${anzahlLifte} Aufzüge (${chf(Math.round(a.preisProJahrChf / anzahlLifte))} pro Aufzug), festes Angebot von ${a.firma}`
+      : `pro Jahr, festes Angebot von ${a.firma}`;
+  const leisteZeigen = !!aktuell && wahlUnten && !formOffen && gesendet !== `${stufe}:${aktuell.firma}`;
+
+  function zurWahl() {
+    setFormOffen(true);
+    wahlRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   return (
     <main className="offers">
@@ -99,7 +123,7 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
         <p className="lead">
           {anlage.anzahlAufzuege} × {anlage.aufzugsart} · {anlage.haltestellen} Haltestellen{anlage.attika ? ` · ${anlage.attika === "ja" ? "mit" : "ohne"} Attika` : ""}{anlage.sicherheitsdispositiv === "ja" ? " · mit Sicherheitsdispositiv" : ""} · {herstellerText} · PLZ {anlage.plz}
         </p>
-        <Link href="/anlage" className="link-muted">
+        <Link href={`/anlage?${params.toString()}`} className="link-muted">
           Angaben ändern
         </Link>
         {beispiel && (
@@ -122,7 +146,10 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
               {a ? (
                 <div>
                   <div className="price">{chf(a.preisProJahrChf)}</div>
-                  <p className="price-sub">pro Jahr, festes Angebot von {a.firma}</p>
+                  <p className="price-sub">{preisText(a)}</p>
+                  <p className="price-sub">
+                    {ergebnis[s].length === 1 ? "1 Angebot" : `${ergebnis[s].length} Angebote`} in dieser Stufe
+                  </p>
                 </div>
               ) : (
                 <p className="empty">Für Ihre Anlage gibt es in dieser Stufe noch kein Angebot.</p>
@@ -173,7 +200,7 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
           <p className="empty">Keine weiteren Angebote in dieser Stufe.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="tabelle-karten">
               <thead>
                 <tr>
                   <th>Liftfirma</th>
@@ -190,18 +217,18 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
               <tbody>
                 {weitere.map((a) => (
                   <tr key={a.firma}>
-                    <td>{a.firma}</td>
-                    <td>{chf(a.preisProJahrChf)}</td>
-                    <td>{a.reaktionszeitStd} Std.</td>
-                    <td>{PIKETT_KURZ[a.pikett]}</td>
-                    <td>{a.vertragsdauerJahre ? dauerText(a.vertragsdauerJahre) : "nicht angegeben"}</td>
-                    <td>{a.vertragsdauerJahre && a.kuendigungsfristMonate ? fristText(a.kuendigungsfristMonate) : "–"}</td>
+                    <td data-label="Liftfirma">{a.firma}</td>
+                    <td data-label="Preis pro Jahr">{chf(a.preisProJahrChf)}</td>
+                    <td data-label="Reaktionszeit">{a.reaktionszeitStd} Std.</td>
+                    <td data-label="Pikett">{PIKETT_KURZ[a.pikett]}</td>
+                    <td data-label="Vertragsdauer">{a.vertragsdauerJahre ? dauerText(a.vertragsdauerJahre) : "nicht angegeben"}</td>
+                    <td data-label="Kündigungsfrist">{a.vertragsdauerJahre && a.kuendigungsfristMonate ? fristText(a.kuendigungsfristMonate) : "–"}</td>
                     <td className="right">
                       <button type="button" className="linkbtn" onClick={() => {
                           setGewaehlt((g) => ({ ...g, [stufe]: a.firma }));
                           setGesendet(null);
                         }}>
-                        Wählen
+                        Wählen<span className="sr-only">: {a.firma}</span>
                       </button>
                     </td>
                   </tr>
@@ -213,7 +240,7 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
       </section>
 
       {aktuell && (
-        <section className="summary" aria-live="polite">
+        <section className="summary" aria-live="polite" ref={wahlRef}>
           <div>
             <div className="summary__label">Ihre Wahl</div>
             <div className="summary__main">
@@ -251,6 +278,7 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
                     email: String(f.get("email") ?? ""),
                     telefon: String(f.get("telefon") ?? ""),
                     adresse: String(f.get("adresse") ?? ""),
+                    webseite: String(f.get(SPAM_FELD) ?? ""),
                   });
                   if (r.ok) {
                     setGesendet(ziel);
@@ -277,6 +305,7 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
                 Adresse der Liegenschaft
                 <input name="adresse" autoComplete="street-address" />
               </label>
+              <SpamFalle />
               {fehler && (
                 <p className="error" role="alert" style={{ gridColumn: "1 / -1" }}>
                   {fehler}
@@ -288,6 +317,20 @@ export function Angebote({ modelle, beispiel }: { modelle: Preismodell[]; beispi
             </form>
           )}
         </section>
+      )}
+
+      {aktuell && leisteZeigen && (
+        <div className="wahl-leiste" role="region" aria-label="Ihre Wahl">
+          <div className="wahl-leiste__text">
+            <strong>
+              {STUFE_INFO[stufe].name} · {chf(aktuell.preisProJahrChf)} / Jahr
+            </strong>
+            <span>{aktuell.firma}</span>
+          </div>
+          <button type="button" className="btn btn--dark" onClick={zurWahl}>
+            Angebot annehmen
+          </button>
+        </div>
       )}
     </main>
   );

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { PortalHeader } from "@/components/PortalHeader";
 import { db, dbKonfiguriert } from "@/lib/db";
@@ -5,6 +6,7 @@ import { preismodellLaden } from "@/lib/repo";
 import { kontoErforderlich } from "@/lib/sitzung";
 import { PreisFormular } from "./PreisFormular";
 
+export const metadata: Metadata = { title: "Ihre Preise" };
 export const dynamic = "force-dynamic";
 
 export default async function PreisePage() {

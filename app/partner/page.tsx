@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AnfragenTabelle } from "@/components/AnfragenTabelle";
@@ -7,6 +8,7 @@ import { anfragenListe, preismodellLaden, UNTERLAGEN_MAX, unterlagenListe } from
 import { kontoErforderlich } from "@/lib/sitzung";
 import { Unterlagen } from "./Unterlagen";
 
+export const metadata: Metadata = { title: "Liftfirmen-Portal" };
 export const dynamic = "force-dynamic";
 
 export default async function PartnerUebersicht() {
