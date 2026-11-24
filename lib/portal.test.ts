@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { hashPasswort, pruefePasswort, passwortFehler, tokenHash } from "./passwort.ts";
+import { emailFehler, hashPasswort, pruefePasswort, passwortFehler, tokenHash } from "./passwort.ts";
 import { leseFormular } from "./preismodellForm.ts";
 
 function formular(werte: Record<string, string | string[]>): FormData {
@@ -39,6 +39,9 @@ test("Passwort-Hash prüft richtig und falsch", async () => {
 test("Kurze Passwörter werden abgelehnt", () => {
   assert.ok(passwortFehler("kurz"));
   assert.equal(passwortFehler("lang-genug-123"), null);
+  assert.ok(emailFehler("liftvergleich.ch"));
+  assert.ok(emailFehler("info@liftvergleich"));
+  assert.equal(emailFehler("info@liftvergleich.ch"), null);
 });
 
 test("Token wird nur als Hash gespeichert", () => {

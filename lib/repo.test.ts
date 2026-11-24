@@ -133,6 +133,10 @@ test("Verwaltungskonto aus ADMIN_EMAIL und ADMIN_PASSWORT", { skip }, async () =
   await adminAusUmgebung(d, {});
   assert.equal(await kontoMitHashPerEmail(d, "kurz@example.ch"), null);
 
+  // E-Mail ohne @ (z. B. nur „liftvergleich.ch“): es wird nichts angelegt.
+  await adminAusUmgebung(d, { ADMIN_EMAIL: "liftvergleich.ch", ADMIN_PASSWORT: "langes-passwort-1" });
+  assert.equal(await kontoMitHashPerEmail(d, "liftvergleich.ch"), null);
+
   // Eine Liftfirma mit derselben E-Mail wird nie zum Admin gemacht.
   await kontoAnlegen(d, { firma: "Lift AG", uid: "CHE-999.888.777", email: "firma@example.ch", passwortHash: "x" });
   await adminAusUmgebung(d, { ADMIN_EMAIL: "firma@example.ch", ADMIN_PASSWORT: "irgendein-passwort" });
