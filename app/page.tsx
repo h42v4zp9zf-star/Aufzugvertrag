@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { BERATUNG_PREIS_CHF } from "@/lib/config";
 
@@ -115,7 +114,6 @@ export default function Startseite() {
           </div>
         </section>
       </main>
-      <Footer />
     </>
   );
 }

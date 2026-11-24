@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
-import { BERATUNG_PREIS_CHF, MARKE } from "@/lib/config";
+import { BERATUNG_PREIS_CHF } from "@/lib/config";
 import { db, dbKonfiguriert } from "@/lib/db";
 import { belegteTermine } from "@/lib/repo";
 import { heuteInZuerich, kalenderTage } from "@/lib/termine";
 import { BeratungForm } from "./BeratungForm";
 
-export const metadata: Metadata = { title: `Beratung vor Ort – ${MARKE}` };
+export const metadata: Metadata = { title: "Beratung vor Ort" };
 // Freie Termine bei jedem Aufruf neu laden.
 export const dynamic = "force-dynamic";
 
@@ -48,7 +47,6 @@ export default async function BeratungPage() {
         </div>
         <BeratungForm heute={heute} belegt={besetzt} />
       </main>
-      <Footer />
     </>
   );
 }

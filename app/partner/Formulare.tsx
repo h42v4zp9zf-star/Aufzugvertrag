@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
+import { SpamFalle } from "@/components/SpamFalle";
 import { einloggen, registrieren, type FormStatus } from "./actions";
 
 const START: FormStatus = { fehler: [] };
@@ -66,6 +67,7 @@ export function RegistrierenForm() {
         Passwort (mindestens 10 Zeichen)
         <input name="passwort" type="password" autoComplete="new-password" minLength={10} required />
       </label>
+      <SpamFalle />
       <button type="submit" className="btn btn--dark" disabled={laeuft}>
         {laeuft ? "Wird gesendet …" : "Konto beantragen"}
       </button>

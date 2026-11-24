@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { DOKUMENTE_MAX_BYTES, dokumentTyp, sichererDateiname } from "@/lib/dokumente";
@@ -16,7 +17,9 @@ import {
   unterlageSpeichern,
   type KontoStatus,
 } from "@/lib/repo";
+import { ipSchluessel, MELDUNG_LOGIN_GESPERRT, MELDUNG_ZU_VIELE, schluessel, versuchMerken, versucheLoeschen, zuViele } from "@/lib/schutz";
 import { kontoErforderlich, sitzungBeenden, sitzungStarten } from "@/lib/sitzung";
+import { istSpam, MELDUNG_SPAM, SPAM_FELD } from "@/lib/spamfalle";
 
 export interface FormStatus {
   fehler: string[];
@@ -40,9 +43,14 @@ export async function registrieren(_: FormStatus, f: FormData): Promise<FormStat
   const pf = passwortFehler(passwort);
   if (pf) fehler.push(pf);
   const werte = { firma, uid, email };
+  if (istSpam(f.get(SPAM_FELD))) return { fehler: [MELDUNG_SPAM], werte };
   if (fehler.length) return { fehler, werte };
 
+  // Höchstens 5 Registrierungen pro Stunde vom selben Anschluss (Verbesserung Nr. 32).
   const d = await db();
+  const ip = ipSchluessel(await headers());
+  if (await zuViele(d, "registrierung", ip)) return { fehler: [MELDUNG_ZU_VIELE], werte };
+  await versuchMerken(d, "registrierung", ip);
   if (await kontoMitHashPerEmail(d, email)) {
     return { fehler: ["Für diese E-Mail-Adresse gibt es bereits ein Konto. Bitte melden Sie sich an."], werte };
   }
@@ -54,9 +62,22 @@ export async function registrieren(_: FormStatus, f: FormData): Promise<FormStat
 export async function einloggen(_: FormStatus, f: FormData): Promise<FormStatus> {
   const email = text(f, "email");
   const passwort = String(f.get("passwort") ?? "");
-  const konto = await kontoMitHashPerEmail(await db(), email);
+  // Passwort-Raten bremsen (Verbesserung Nr. 32): nach 10 falschen Versuchen für eine E-Mail-Adresse
+  // oder 30 vom selben Anschluss ist die Anmeldung 15 Minuten gesperrt.
+  const d = await db();
+  const adresse = schluessel(email);
+  const ip = ipSchluessel(await headers());
+  if ((await zuViele(d, "login-email", adresse)) || (await zuViele(d, "login-ip", ip))) {
+    return { fehler: [MELDUNG_LOGIN_GESPERRT], werte: { email } };
+  }
+  const konto = await kontoMitHashPerEmail(d, email);
   const ok = konto ? await pruefePasswort(passwort, konto.passwort_hash) : false;
-  if (!konto || !ok) return { fehler: ["E-Mail oder Passwort ist falsch."], werte: { email } };
+  if (!konto || !ok) {
+    await versuchMerken(d, "login-email", adresse);
+    await versuchMerken(d, "login-ip", ip);
+    return { fehler: ["E-Mail oder Passwort ist falsch."], werte: { email } };
+  }
+  await versucheLoeschen(d, "login-email", adresse);
   if (konto.status === "gesperrt") return { fehler: ["Dieses Konto ist gesperrt. Bitte kontaktieren Sie uns."], werte: { email } };
   await sitzungStarten(konto.id);
   redirect(konto.rolle === "admin" ? "/admin" : "/partner");

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PortalHeader } from "@/components/PortalHeader";
@@ -8,6 +9,7 @@ import { AnfragenListe } from "./_tabellen/AnfragenListe";
 import { BeratungenListe } from "./_tabellen/BeratungenListe";
 import { FirmenTabelle } from "./_tabellen/FirmenTabelle";
 
+export const metadata: Metadata = { title: "Verwaltung" };
 export const dynamic = "force-dynamic";
 
 /** Heutiges Datum in Zürich als „JJJJ-MM-TT“ (für „kommende Termine“). */

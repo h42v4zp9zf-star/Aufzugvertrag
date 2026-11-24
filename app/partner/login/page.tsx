@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { DbFehlt } from "@/components/DbFehlt";
 import { PortalHeader } from "@/components/PortalHeader";
@@ -5,6 +6,7 @@ import { dbKonfiguriert } from "@/lib/db";
 import { aktuellesKonto } from "@/lib/sitzung";
 import { LoginForm } from "../Formulare";
 
+export const metadata: Metadata = { title: "Anmelden" };
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ passwort?: string | string[] }> }) {

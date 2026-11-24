@@ -8,7 +8,9 @@ import { db, dbKonfiguriert } from "@/lib/db";
 import { DOKUMENTE_MAX_ANZAHL, DOKUMENTE_MAX_BYTES, dokumentTyp, sichererDateiname } from "@/lib/dokumente";
 import { benachrichtigen } from "@/lib/mail";
 import { beratungAnlegen, TerminVergeben, type NeuesDokument } from "@/lib/repo";
+import { ipSchluessel, MELDUNG_ZU_VIELE, versuchMerken, zuViele } from "@/lib/schutz";
 import { logoLaden, seitenAdresse } from "@/lib/seite";
+import { istSpam, MELDUNG_SPAM, SPAM_FELD } from "@/lib/spamfalle";
 import { heuteInZuerich, terminGueltig, terminText } from "@/lib/termine";
 
 export type BeratungErgebnis = { ok: true } | { ok: false; fehler: string; vergeben?: boolean };
@@ -18,6 +20,7 @@ const text = (f: FormData, n: string, max: number) => String(f.get(n) ?? "").tri
 
 export async function beratungSenden(f: FormData): Promise<BeratungErgebnis> {
   if (!dbKonfiguriert()) return { ok: false, fehler: "Buchungen sind in der Vorschau noch nicht möglich." };
+  if (istSpam(f.get(SPAM_FELD))) return { ok: false, fehler: `${MELDUNG_SPAM} Oder schreiben Sie uns an ${KONTAKT_EMAIL}.` };
   const datum = text(f, "termin_datum", 10);
   const zeit = text(f, "termin_zeit", 5);
   const name = text(f, "name", 200);
@@ -48,8 +51,15 @@ export async function beratungSenden(f: FormData): Promise<BeratungErgebnis> {
     dokumente.push({ dateiname: sichererDateiname(datei.name, typ), typ, inhalt });
   }
 
+  // Höchstens 5 Buchungen pro Stunde vom selben Anschluss (Verbesserung Nr. 32).
+  const d = await db();
+  const h = await headers();
+  const ip = ipSchluessel(h);
+  if (await zuViele(d, "beratung", ip)) return { ok: false, fehler: `${MELDUNG_ZU_VIELE} Oder schreiben Sie uns an ${KONTAKT_EMAIL}.` };
+  await versuchMerken(d, "beratung", ip);
+
   try {
-    await beratungAnlegen(await db(), { name, email, telefon, adresse, anzahlAufzuege: anzahl, bemerkung, termin: { datum, zeit }, dokumente });
+    await beratungAnlegen(d, { name, email, telefon, adresse, anzahlAufzuege: anzahl, bemerkung, termin: { datum, zeit }, dokumente });
   } catch (e) {
     if (e instanceof TerminVergeben)
       return { ok: false, vergeben: true, fehler: "Dieser Termin wurde soeben vergeben. Bitte wählen Sie eine andere Zeit." };
@@ -59,7 +69,7 @@ export async function beratungSenden(f: FormData): Promise<BeratungErgebnis> {
   // E-Mail an Dario mit PDF und Dokumenten, erst nach der Antwort an den Kunden.
   // Klappt der Versand nicht, bleibt die Buchung trotzdem gespeichert.
   const gebuchtAm = new Date();
-  const adresseSeite = seitenAdresse(await headers());
+  const adresseSeite = seitenAdresse(h);
   after(() =>
     benachrichtigen("Beratung vor Ort", async () =>
       beratungMail({

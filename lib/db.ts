@@ -97,6 +97,15 @@ CREATE TABLE IF NOT EXISTS passwort_links (
 );
 CREATE INDEX IF NOT EXISTS passwort_links_konto ON passwort_links (konto_id);
 
+-- Schutz vor Spam und Passwort-Raten (Verbesserung Nr. 32, 24.11.2026): Versuche pro Art und Schlüssel
+-- (E-Mail-Adresse oder verschlüsselte IP-Adresse), älter als ein Tag wird gelöscht.
+CREATE TABLE IF NOT EXISTS versuche (
+  art         TEXT NOT NULL,
+  schluessel  TEXT NOT NULL,
+  zeit        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS versuche_suche ON versuche (art, schluessel, zeit);
+
 CREATE TABLE IF NOT EXISTS beratung_checklisten (
   beratung_id       INTEGER PRIMARY KEY REFERENCES beratungen(id) ON DELETE CASCADE,
   daten             JSONB NOT NULL,
