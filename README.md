@@ -13,7 +13,8 @@ Die Marke heisst **Elevaris**. Hauptdomain ist **elevaris.ch**, dazu kommt **lif
 - **Verwaltung** (`/admin`): Liftfirmen prüfen und freischalten oder sperren, alle Anfragen mit Vermittlungsgebühr (CHF 160 pro Anfrage).
 - Preise erscheinen im Vergleich erst, wenn die Firma freigeschaltet ist **und** „veröffentlichen“ angehakt hat. Solange das bei keiner Firma der Fall ist, zeigt der Vergleich erfundene Beispielpreise (`lib/beispielmodelle.ts`) mit Hinweis.
 - **Beratung vor Ort** (`/beratung`): Buchungsformular, die Buchungen erscheinen in der Verwaltung.
-- Noch nicht gebaut: E-Mail-Versand (Bestätigung an Kunde und Firma, Passwort vergessen), Rechnungen, Hosting in der Schweiz, Datenschutzerklärung.
+- **E-Mails** (über Resend): Benachrichtigung mit PDF bei jeder Buchung „Beratung vor Ort“ (mit den hochgeladenen Dokumenten) und bei jedem angenommenen Angebot; „Passwort vergessen“ für Liftfirmen (Link 1 Stunde) und in der Verwaltung ein Knopf, der einen Link erstellt (24 Stunden). Ohne `RESEND_API_KEY` bleibt der Versand aus, Buchungen werden trotzdem gespeichert.
+- Noch nicht gebaut: Bestätigung per E-Mail an Kunden (erst mit eigener Domain bei Resend), Rechnungen, Hosting in der Schweiz, Datenschutzerklärung.
 
 ## Testversion (Vercel + Neon, kostenlos)
 
@@ -23,6 +24,7 @@ Zum Ausprobieren, bevor ein Schweizer Hoster gewählt ist. Nur mit Testdaten ver
 2. Beim Import zwei Umgebungsvariablen setzen: `ADMIN_EMAIL` und `ADMIN_PASSWORT` (mind. 10 Zeichen). Das Verwaltungskonto wird damit automatisch angelegt.
 3. Im Projekt unter „Storage“ eine Neon-Datenbank anlegen und mit dem Projekt verbinden (setzt `DATABASE_URL`).
 4. Neu bereitstellen („Redeploy“). Die Tabellen werden beim ersten Aufruf angelegt.
+5. Für E-Mails: bei resend.com einen API-Schlüssel erstellen und in Vercel `RESEND_API_KEY` sowie `BENACHRICHTIGUNG_AN` (Empfänger der Benachrichtigungen) setzen, dann neu bereitstellen. Solange keine eigene Domain bei Resend verbunden ist, sendet Resend nur an die eigene Adresse des Resend-Kontos; „Passwort vergessen“-Mails an Liftfirmen kommen dann noch nicht an (dafür gibt es den Knopf in der Verwaltung).
 
 `vercel.json` legt die Server nach Frankfurt (`fra1`), nahe an die Datenbank. Bis zum Start ist die Seite für Suchmaschinen gesperrt (`robots` in `app/layout.tsx`).
 

@@ -44,3 +44,8 @@ export function emailFehler(email: string): string | null {
   if (!EMAIL_MUSTER.test(email)) return "Die E-Mail-Adresse ist ungültig (Beispiel: name@firma.ch).";
   return null;
 }
+
+// „Passwort vergessen“ (Entscheid Dario 24.11.2026): Gültigkeit der Links in Minuten.
+export const PASSWORT_LINK_EMAIL_MIN = 60; // Link per E-Mail an die Firma
+export const PASSWORT_LINK_VERWALTUNG_MIN = 24 * 60; // Link, den die Verwaltung erstellt und selbst schickt
+export const PASSWORT_LINK_SPERRE_MIN = 2; // höchstens eine Mail pro Konto in dieser Zeit

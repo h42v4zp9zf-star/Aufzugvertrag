@@ -30,6 +30,11 @@ export function LoginForm() {
         Passwort
         <input name="passwort" type="password" autoComplete="current-password" required />
       </label>
+      <p className="muted" style={{ marginTop: -4 }}>
+        <Link href="/partner/passwort" style={{ textDecoration: "underline" }}>
+          Passwort vergessen?
+        </Link>
+      </p>
       <button type="submit" className="btn btn--dark" disabled={laeuft}>
         {laeuft ? "Wird geprüft …" : "Anmelden"}
       </button>

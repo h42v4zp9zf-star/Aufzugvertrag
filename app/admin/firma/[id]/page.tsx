@@ -10,6 +10,7 @@ import { anfragenListe, firmaLaden, preismodellLaden, unterlagenListe } from "@/
 import { kontoErforderlich } from "@/lib/sitzung";
 import { PLZ_KREISE, STUFEN_NAMEN } from "@/lib/stammdaten";
 import { STATUS_TEXT, StatusKnopf } from "../../_tabellen/StatusKnopf";
+import { PasswortLink } from "./PasswortLink";
 
 // Detailseite einer Liftfirma in der Verwaltung (Wunsch Dario 23.11.2026):
 // Firmendaten, Preisangaben so wie erfasst, Vertragsunterlagen und Anfragen.
@@ -88,6 +89,11 @@ export default async function FirmaPage({ params }: { params: Promise<{ id: stri
               <dd>{datum(firma.erstellt_am)}</dd>
             </div>
           </dl>
+        </section>
+
+        <section className="card">
+          <h2>Passwort zurücksetzen</h2>
+          <PasswortLink id={firma.id} />
         </section>
 
         <section className="card">

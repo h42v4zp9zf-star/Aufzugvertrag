@@ -32,14 +32,14 @@ export interface BerichtEingabe {
   erstelltAm?: Date;
 }
 
-const A4: [number, number] = [595.28, 841.89];
-const RAND = 50;
-const BREITE = A4[0] - 2 * RAND;
+export const A4: [number, number] = [595.28, 841.89];
+export const RAND = 50;
+export const BREITE = A4[0] - 2 * RAND;
 const UNTEN = 64; // Platz für die Fusszeile
 const LABEL_BREITE = 170;
-const TINTE = rgb(0.09, 0.102, 0.125); // #171a20 wie die Website
-const GRAU = rgb(0.38, 0.39, 0.42);
-const LINIE = rgb(0.86, 0.86, 0.87);
+export const TINTE = rgb(0.09, 0.102, 0.125); // #171a20 wie die Website
+export const GRAU = rgb(0.38, 0.39, 0.42);
+export const LINIE = rgb(0.86, 0.86, 0.87);
 
 // Helvetica im PDF kennt nur die westeuropäischen Zeichen (WinAnsi). Alles andere wird
 // ohne Akzent geschrieben oder durch „?“ ersetzt, damit der Bericht nie abbricht.
@@ -101,7 +101,7 @@ const paketText = (p: string) =>
       ? "Noch offen"
       : "";
 
-class Seiten {
+export class Seiten {
   seite!: PDFPage;
   y = 0;
   readonly pdf: PDFDocument;

@@ -1,10 +1,15 @@
 "use server";
 
-import { BERATUNG_PREIS_CHF } from "@/lib/config";
+import { headers } from "next/headers";
+import { after } from "next/server";
+import { beratungMail } from "@/lib/benachrichtigung";
+import { BERATUNG_PREIS_CHF, KONTAKT_EMAIL, MARKE } from "@/lib/config";
 import { db, dbKonfiguriert } from "@/lib/db";
 import { DOKUMENTE_MAX_ANZAHL, DOKUMENTE_MAX_BYTES, dokumentTyp, sichererDateiname } from "@/lib/dokumente";
+import { benachrichtigen } from "@/lib/mail";
 import { beratungAnlegen, TerminVergeben, type NeuesDokument } from "@/lib/repo";
-import { heuteInZuerich, terminGueltig } from "@/lib/termine";
+import { logoLaden, seitenAdresse } from "@/lib/seite";
+import { heuteInZuerich, terminGueltig, terminText } from "@/lib/termine";
 
 export type BeratungErgebnis = { ok: true } | { ok: false; fehler: string; vergeben?: boolean };
 
@@ -50,5 +55,30 @@ export async function beratungSenden(f: FormData): Promise<BeratungErgebnis> {
       return { ok: false, vergeben: true, fehler: "Dieser Termin wurde soeben vergeben. Bitte wählen Sie eine andere Zeit." };
     throw e;
   }
+
+  // E-Mail an Dario mit PDF und Dokumenten, erst nach der Antwort an den Kunden.
+  // Klappt der Versand nicht, bleibt die Buchung trotzdem gespeichert.
+  const gebuchtAm = new Date();
+  const adresseSeite = seitenAdresse(await headers());
+  after(() =>
+    benachrichtigen("Beratung vor Ort", async () =>
+      beratungMail({
+        marke: MARKE,
+        kontaktEmail: KONTAKT_EMAIL,
+        logo: await logoLaden(),
+        datum,
+        zeit,
+        termin: terminText(datum, zeit),
+        kunde: { name, email, telefon, adresse },
+        anzahlAufzuege: anzahl,
+        bemerkung,
+        preisChf: BERATUNG_PREIS_CHF,
+        gebuchtAm,
+        dokumente: dokumente.map((x) => ({ dateiname: x.dateiname, groesse: x.inhalt.length })),
+        dokumenteInhalt: dokumente.map((x) => ({ dateiname: x.dateiname, inhalt: x.inhalt })),
+        verwaltungUrl: adresseSeite ? `${adresseSeite}/admin` : null,
+      }),
+    ),
+  );
   return { ok: true };
 }
